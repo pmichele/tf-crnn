@@ -12,11 +12,12 @@ class CONST:
 
 
 class Alphabet:
-    LettersLowercase = 'abcdefghijklmnopqrstuvwxyz'  # 26
-    LettersCapitals = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'  # 26
-    Digits = '0123456789'  # 10
-    Symbols = " '.,:;-_=()[]{}/°"  # 17
-    # Symbols = " '.,:-="  # 7
+    DiacriticalLower = 'çéèàùêâôûîëï' # 12 these were found in the training set
+    DiacriticalUpper = 'È'            # 1
+    LettersLowercase = 'abcdefghijklmnopqrstuvwxyz' + DiacriticalLower  # 26 + 12
+    LettersCapitals  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + DiacriticalUpper  # 26 + 1
+    Digits = '0123456789'    # 10
+    Symbols = " '.,-/"               #old: " '.,:-()/*°"  # 11
     DecodingList = ['same', 'lowercase']
 
     BLANK_SYMBOL = '$'
@@ -78,32 +79,52 @@ class Params:
     def __init__(self, **kwargs):
         self.train_batch_size = kwargs.get('train_batch_size', 100)
         self.eval_batch_size = kwargs.get('eval_batch_size', 200)
+
         # Initial value of learining rate (exponential learning rate is used)
         self.learning_rate = kwargs.get('learning_rate', 1e-4)
-        # Learning rate decay for exponential learning rate
-        self.learning_decay_rate = kwargs.get('learning_decay_rate', 0.96)
-        # Decay steps for exponential learning rate
-        self.learning_decay_steps = kwargs.get('learning_decay_steps', 1000)
+        # # Learning rate decay for exponential learning rate
+        # self.learning_decay_rate = kwargs.get('learning_decay_rate', 0.96)
+        # # Decay steps for exponential learning rate
+        # self.learning_decay_steps = kwargs.get('learning_decay_steps', 1000)
+
         self.optimizer = kwargs.get('optimizer', 'adam')
         self.n_epochs = kwargs.get('n_epochs', 50)
         self.evaluate_every_epoch = kwargs.get('evaluate_every_epoch', 5)
         self.save_interval = kwargs.get('save_interval', 1e3)
+
         # Shape of the image to be processed. The original with either be resized or pad depending on its original size
         self.input_shape = kwargs.get('input_shape', (32, 100))
         # Either decode with the same alphabet or map capitals and lowercase letters to the same symbol (lowercase)
         self.alphabet_decoding = kwargs.get('alphabet_decoding', 'same')
-        self.csv_delimiter = kwargs.get('csv_delimiter', ';')
         self.gpu = kwargs.get('gpu', '')
         # Alphabet to use (from class Alphabet)
         self.alphabet = kwargs.get('alphabet')
+
+        self.csv_delimiter = kwargs.get('csv_delimiter', ';')
+
         self.csv_files_train = kwargs.get('csv_files_train')
+        if kwargs.get('glob_files_train'):
+            self.csv_files_train = self.expand_files(self.csv_files_train, kwargs['glob_files_train'])
+
         self.csv_files_eval = kwargs.get('csv_files_eval')
+        if kwargs.get('glob_files_eval'):
+            self.csv_files_eval = self.expand_files(self.csv_files_eval, kwargs['glob_files_eval'])
+
         self.output_model_dir = kwargs.get('output_model_dir')
         self._keep_prob_dropout = kwargs.get('keep_prob')
 
         assert self.optimizer in ['adam', 'rms', 'ada'], 'Unknown optimizer {}'.format(self.optimizer)
 
         self._assign_alphabet(alphabet_decoding_list=Alphabet.DecodingList)
+
+    def expand_files(self, dirs, pattern):
+        files = []
+        for directory in dirs:
+            search_pattern = os.path.join(directory, pattern)
+            files_found = glob(search_pattern)
+            assert len(files_found) > 0, 'No files found for ' + search_pattern
+            files += files_found
+        return files
 
     def export_experiment_params(self):
         if not os.path.isdir(self.output_model_dir):
@@ -199,7 +220,8 @@ def import_params_from_json(model_directory: str=None, json_filename: str=None) 
             print('No json found with filename {}'.format(json_filename))
             raise FileNotFoundError
 
-    with open(json_filename, 'r') as data_json:
+    print('Importing parameters from', json_filename)
+    with open(json_filename, 'r', encoding='utf8') as data_json:
         params_json = json.load(data_json)
 
     # Remove 'private' keys

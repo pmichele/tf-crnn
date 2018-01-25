@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 __author__ = 'solivr'
 
-from src.data_handler import preprocess_image_for_prediction
+from src.data_handler import preprocess_image_for_prediction, data_loader
 from src.model import crnn_fn
 import tensorflow as tf
 import os
@@ -24,9 +24,10 @@ if __name__ == '__main__':
     config_sess = tf.ConfigProto()
     config_sess.gpu_options.per_process_gpu_memory_fraction = 0.6
 
-    # Import parameters from the json file
+    # Import params from the json file
     params_json = import_params_from_json(args.get('model_dir'))
     params = Params(**params_json)
+    print(params)
 
     # Config
     est_config = tf.estimator.RunConfig()
@@ -36,10 +37,20 @@ if __name__ == '__main__':
                        save_checkpoints_secs=None,
                        save_summary_steps=1000)
 
-    estimator = tf.estimator.Estimator(model_fn=crnn_fn, params=params,
+    model_params = {
+        'Params': params,
+    }
+
+    estimator = tf.estimator.Estimator(model_fn=crnn_fn, params=model_params,
                                        model_dir=args.get('model_dir'),
                                        config=est_config,
                                        )
+    estimator.train(input_fn=data_loader(csv_filename=params.csv_files_train,
+                                         params=params,
+                                         batch_size=1,
+                                         num_epochs=1,
+                                         data_augmentation=True,
+                                         image_summaries=True))
 
     estimator.export_savedmodel(args.get('export_dir'),
                                 serving_input_receiver_fn=preprocess_image_for_prediction(min_width=10))

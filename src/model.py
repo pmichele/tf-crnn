@@ -158,11 +158,16 @@ def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> 
     return conv_reshaped
 
 
-def deep_bidirectional_lstm(inputs: tf.Tensor, params: Params, summaries: bool=True) -> tf.Tensor:
+def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Params, summaries: bool=True) -> tf.Tensor:
     # Prepare data shape to match `bidirectional_rnn` function requirements
     # Current data input shape: (batch_size, n_steps, n_input) "(batch, time, height)"
 
     list_n_hidden = [256, 256]
+
+    # add the corpora to the input at time[0]; TODO: what values should we use ? (0,1) ?
+    corpora = tf.expand_dims(corpora, axis=1) # add the time dimension
+    corpora = tf.one_hot(corpora, depth=inputs.shape[2], dtype=inputs.dtype, name='corpus_to_onehot')
+    inputs = tf.concat((corpora, inputs), axis=1, name='concat_corpus')
 
     with tf.name_scope('deep_bidirectional_lstm'):
         # Forward direction cells
@@ -177,6 +182,7 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, params: Params, summaries: bool=T
                                                                         )
 
         # Dropout layer
+        print('Using dropout', params.keep_prob_dropout)
         lstm_net = tf.nn.dropout(lstm_net, keep_prob=params.keep_prob_dropout)
 
         with tf.variable_scope('Reshaping_rnn'):
@@ -212,6 +218,7 @@ def crnn_fn(features, labels, mode, params):
                             'images'
                             'images_widths'
                             'filenames'
+                            'corpora'
                             }
     :param labels: labels. flattend (1D) array with encoded label (one code per character)
     :param mode:
@@ -224,13 +231,11 @@ def crnn_fn(features, labels, mode, params):
     parameters = params.get('Params')
     assert isinstance(parameters, Params)
 
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        parameters.keep_prob_dropout = 0.7
-    else:
+    if mode != tf.estimator.ModeKeys.TRAIN:
         parameters.keep_prob_dropout = 1.0
 
     conv = deep_cnn(features['images'], (mode == tf.estimator.ModeKeys.TRAIN), summaries=False)
-    logprob, raw_pred = deep_bidirectional_lstm(conv, params=parameters, summaries=False)
+    logprob, raw_pred = deep_bidirectional_lstm(conv, features['corpora'], params=parameters, summaries=False)
 
     # Compute seq_len from image width
     n_pools = CONST.DIMENSION_REDUCTION_W_POOLING  # 2x2 pooling in dimension W on layer 1 and 2
@@ -246,15 +251,18 @@ def crnn_fn(features, labels, mode, params):
 
     if not mode == tf.estimator.ModeKeys.PREDICT:
         # Alphabet and codes
-        keys = [c for c in parameters.alphabet]
+        keys = [c for c in parameters.alphabet.encode('latin1')]
         values = parameters.alphabet_codes
 
         # Convert string label to code label
         with tf.name_scope('str2code_conversion'):
-            table_str2int = tf.contrib.lookup.HashTable(tf.contrib.lookup.KeyValueTensorInitializer(keys, values), -1)
-            splited = tf.string_split(labels, delimiter='')  # TODO change string split to utf8 split in next tf version
-            codes = table_str2int.lookup(splited.values)
-            sparse_code_target = tf.SparseTensor(splited.indices, codes, splited.dense_shape)
+            table_str2int = tf.contrib.lookup.HashTable(
+                tf.contrib.lookup.KeyValueTensorInitializer(keys, values, key_dtype=tf.int64, value_dtype=tf.int64), -1)
+            splitted = tf.string_split(labels, delimiter='')
+            values_int = tf.cast(tf.squeeze(tf.decode_raw(splitted.values, tf.uint8)), tf.int64)
+            codes = table_str2int.lookup(values_int)
+            codes = tf.cast(codes, tf.int32)
+            sparse_code_target = tf.SparseTensor(splitted.indices, codes, splitted.dense_shape)
 
         seq_lengths_labels = tf.bincount(tf.cast(sparse_code_target.indices[:, 0], tf.int32),
                                          minlength=tf.shape(predictions_dict['prob'])[1])
@@ -282,9 +290,7 @@ def crnn_fn(features, labels, mode, params):
 
         # Train op
         # --------
-        learning_rate = tf.train.exponential_decay(parameters.learning_rate, global_step,
-                                                   parameters.learning_decay_steps, parameters.learning_decay_rate,
-                                                   staircase=True)
+        learning_rate = tf.constant(parameters.learning_rate)
 
         if parameters.optimizer == 'ada':
             optimizer = tf.train.AdadeltaOptimizer(learning_rate)

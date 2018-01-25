@@ -78,5 +78,5 @@ if __name__ == '__main__':
 
     csv_filenames = args.get('input_files')
 
-    csv_rel2abs_path_convertor(csv_filenames, delimiter=args.get('delimiter_char'))
+    csv_rel2abs_path_convertor(csv_filenames, delimiter=args.get('delimiter_char'), encoding='latin1')
 
