@@ -164,10 +164,13 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
 
     list_n_hidden = [256, 256]
 
-    # add the corpora to the input at time[0]; TODO: what values should we use ? (0,1) ?
-    corpora = tf.expand_dims(corpora, axis=1) # add the time dimension
-    corpora = tf.one_hot(corpora, depth=inputs.shape[2], dtype=inputs.dtype, name='corpus_to_onehot')
-    inputs = tf.concat((corpora, inputs), axis=1, name='concat_corpus')
+    # add the corpora to all input times; TODO: what values should we use for one-hot? (0,1) ?
+    with tf.name_scope('corpus_concat'):
+        corpora = tf.expand_dims(corpora, axis=1) # add the time dimension
+        corpora = tf.one_hot(corpora, depth=params.num_corpora, dtype=inputs.dtype, name='corpus_to_onehot')
+        multiples = tf.stack([1, tf.shape(inputs)[1], 1])
+        corpora = tf.tile(corpora, multiples)
+        inputs = tf.concat((corpora, inputs), axis=2, name='concat_corpus')
 
     with tf.name_scope('deep_bidirectional_lstm'):
         # Forward direction cells

@@ -60,16 +60,16 @@ if __name__ == '__main__':
             'Input CSV should be a list of files'
 
     # check input had conforming alphabet
-    params_alphabet = set(parameters.alphabet)
-    input_alphabet = set()
-    for filename in parameters.csv_files_train + parameters.csv_files_eval:
-        with open(filename, encoding='latin1') as file:
-            for line in file:
-                input_alphabet.update(line.split(parameters.csv_delimiter)[1])
-        for sep in '\n\r':
-            input_alphabet.discard(sep)
-        extra_chars = input_alphabet - params_alphabet
-        assert len(extra_chars) == 0, '%s in %s' % (extra_chars, filename)
+    # params_alphabet = set(parameters.alphabet)
+    # input_alphabet = set()
+    # for filename in parameters.csv_files_train + parameters.csv_files_eval:
+    #     with open(filename, encoding='latin1') as file:
+    #         for line in file:
+    #             input_alphabet.update(line.split(parameters.csv_delimiter)[1])
+    #     for sep in '\n\r':
+    #         input_alphabet.discard(sep)
+    #     extra_chars = input_alphabet - params_alphabet
+    #     assert len(extra_chars) == 0, '%s in %s' % (extra_chars, filename)
 
 
     model_params = {

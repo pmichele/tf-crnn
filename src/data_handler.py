@@ -39,7 +39,7 @@ def data_loader(csv_filename: str, params: Params, batch_size: int=128, data_aug
                                                 name='prepared_batch_queue')
 
         if image_summaries:
-            tf.summary.image('input/image', prepared_batch.get('images'), max_outputs=25)
+            tf.summary.image('input/image', prepared_batch.get('images'), max_outputs=10)
         tf.summary.text('input/labels', prepared_batch.get('labels')[:10])
         tf.summary.text('input/widths', tf.as_string(prepared_batch.get('images_widths')))
 
@@ -214,8 +214,9 @@ def preprocess_image_for_prediction(fixed_height: int=32, min_width: int=8):
     """
 
     def serving_input_fn():
-        # define placeholder for input image
-        image = tf.placeholder(dtype=tf.float32, shape=[None, None, 1])
+        # define placeholder for input image and its corpus type
+        image = tf.placeholder(dtype=tf.float32, shape=[None, None, 1], name='input_image')
+        corpus = tf.placeholder(dtype=tf.int32, shape=[1], name='input_corpus')
 
         shape = tf.shape(image)
         # Assert shape is h x w x c with c = 1
@@ -229,13 +230,14 @@ def preprocess_image_for_prediction(fixed_height: int=32, min_width: int=8):
                                 false_fn=lambda: tf.image.resize_images(image, size=(fixed_height, new_width))
                                 )
 
-        # Features to serve
+        # Features to serve (to send to the model)
         features = {'images': resized_image[None],  # cast to 1 x h x w x c
-                    'images_widths': new_width[None]  # cast to tensor
+                    'images_widths': new_width[None],  # cast to tensor
+                    'corpora': corpus,
                     }
 
         # Inputs received
-        receiver_inputs = {'images': image}
+        receiver_inputs = {'images': image, 'corpora': corpus}
 
         return tf.estimator.export.ServingInputReceiver(features, receiver_inputs)
 

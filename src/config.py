@@ -111,6 +111,7 @@ class Params:
             self.csv_files_eval = self.expand_files(self.csv_files_eval, kwargs['glob_files_eval'])
 
         self.output_model_dir = kwargs.get('output_model_dir')
+        self.num_corpora = kwargs.get('num_corpora', 0)
         self._keep_prob_dropout = kwargs.get('keep_prob')
 
         assert self.optimizer in ['adam', 'rms', 'ada'], 'Unknown optimizer {}'.format(self.optimizer)
