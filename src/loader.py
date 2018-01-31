@@ -15,9 +15,11 @@ class PredictionModel:
 
         self._input_dict, self._output_dict = _signature_def_to_tensors(self.model.signature_def['predictions'])
 
-    def predict(self, image):
-        output = self._output_dict
-        return self.session.run(output, feed_dict={self._input_dict['images']: image})
+    def predict(self, image, corpus):
+        return self.session.run(self._output_dict,
+                                feed_dict={ self._input_dict['images']: image,
+                                            self._input_dict['corpora']: corpus,
+                                })
 
 
 def _signature_def_to_tensors(signature_def):  # from SeguinBe
