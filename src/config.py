@@ -89,7 +89,7 @@ class Params:
 
         self.optimizer = kwargs.get('optimizer', 'adam')
         self.n_epochs = kwargs.get('n_epochs', 50)
-        self.evaluate_every_epoch = kwargs.get('evaluate_every_epoch', 5)
+        self.epoch_size = kwargs.get('epoch_size', None) # in steps
         self.save_interval = kwargs.get('save_interval', 1e3)
 
         # Shape of the image to be processed. The original with either be resized or pad depending on its original size

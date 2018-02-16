@@ -39,7 +39,7 @@ if __name__ == '__main__':
                             learning_rate=1e-3,  # 1e-3 recommended
                             learning_decay_rate=0.95,
                             learning_decay_steps=5000,
-                            evaluate_every_epoch=5,
+                            epoch_size=None,
                             save_interval=5e3,
                             input_shape=(32, 200),
                             optimizer='adam',
@@ -84,13 +84,14 @@ if __name__ == '__main__':
     config_sess.gpu_options.allow_growth = True
 
     # Config estimator
-    est_config = tf.estimator.RunConfig()
-    est_config.replace(keep_checkpoint_max=10,
-                       save_checkpoints_steps=parameters.save_interval,
-                       session_config=config_sess,
-                       save_checkpoints_secs=None,
-                       save_summary_steps=1000,
-                       model_dir=parameters.output_model_dir)
+    est_config = tf.estimator.RunConfig().replace(
+        keep_checkpoint_max=200,
+        save_checkpoints_steps=parameters.save_interval,
+        session_config=config_sess,
+        save_checkpoints_secs=None,
+        save_summary_steps=1000,
+        model_dir=parameters.output_model_dir
+    )
 
     estimator = tf.estimator.Estimator(model_fn=crnn_fn,
                                        params=model_params,
@@ -98,19 +99,32 @@ if __name__ == '__main__':
                                        config=est_config
                                        )
 
+    SAMPLES_PER_FILE = 1000 # that's how we generated them
+
     # Count number of image filenames in csv
-    n_samples = 0
+    n_samples_eval = 0
     for file in parameters.csv_files_eval:
         with open(file, 'r', encoding='latin1') as csvfile:
             reader = csv.reader(csvfile, delimiter=parameters.csv_delimiter)
-            n_samples += len(list(reader))
+            n_samples_eval += len(list(reader))
 
+    if parameters.epoch_size is None:
+        parameters.epoch_size = len(parameters.csv_files_train) * SAMPLES_PER_FILE
+    else:
+        assert parameters.epoch_size <= len(parameters.csv_files_train) * SAMPLES_PER_FILE,\
+               'Epoch size too big'
+
+
+    files_per_epoch = parameters.epoch_size // SAMPLES_PER_FILE
     try:
-        for e in trange(0, parameters.n_epochs, parameters.evaluate_every_epoch):
-            estimator.train(input_fn=data_loader(csv_filename=parameters.csv_files_train,
+        for e in trange(0, parameters.n_epochs):
+            # now we always evaluate every (sub-)epoch
+            epoch_train_subset = slice(e * files_per_epoch, (e+1) * files_per_epoch)
+            print(epoch_train_subset)
+            estimator.train(input_fn=data_loader(csv_filename=parameters.csv_files_train[epoch_train_subset],
                                                  params=parameters,
                                                  batch_size=parameters.train_batch_size,
-                                                 num_epochs=parameters.evaluate_every_epoch,
+                                                 num_epochs=1,
                                                  data_augmentation=True,
                                                  image_summaries=True))
             print('Train done')
@@ -118,7 +132,7 @@ if __name__ == '__main__':
                                                     params=parameters,
                                                     batch_size=parameters.eval_batch_size,
                                                     num_epochs=1),
-                               steps=np.floor(n_samples/parameters.eval_batch_size)
+                               steps=np.floor(n_samples_eval/parameters.eval_batch_size)
                                )
             print('Eval done')
 
