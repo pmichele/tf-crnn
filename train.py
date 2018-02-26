@@ -76,7 +76,7 @@ if __name__ == '__main__':
         'Params': parameters,
     }
 
-    parameters.export_experiment_params()
+    parameters.export_experiment_params() #The parameters are saved in the output_dir. Useful if the args were written in the terminal 
 
     os.environ['CUDA_VISIBLE_DEVICES'] = parameters.gpu
     config_sess = tf.ConfigProto()
@@ -93,7 +93,7 @@ if __name__ == '__main__':
         model_dir=parameters.output_model_dir
     )
 
-    estimator = tf.estimator.Estimator(model_fn=crnn_fn,
+    estimator = tf.estimator.Estimator(model_fn=crnn_fn,     #Create the pipeline 
                                        params=model_params,
                                        model_dir=parameters.output_model_dir,
                                        config=est_config
@@ -115,13 +115,13 @@ if __name__ == '__main__':
                'Epoch size too big'
 
 
-    files_per_epoch = parameters.epoch_size // SAMPLES_PER_FILE
+    files_per_epoch = parameters.epoch_size // SAMPLES_PER_FILE #floor division
     try:
         for e in trange(0, parameters.n_epochs):
             # now we always evaluate every (sub-)epoch
             epoch_train_subset = slice(e * files_per_epoch, (e+1) * files_per_epoch)
             print(epoch_train_subset)
-            estimator.train(input_fn=data_loader(csv_filename=parameters.csv_files_train[epoch_train_subset],
+            estimator.train(input_fn=data_loader(csv_filename=parameters.csv_files_train,
                                                  params=parameters,
                                                  batch_size=parameters.train_batch_size,
                                                  num_epochs=1,

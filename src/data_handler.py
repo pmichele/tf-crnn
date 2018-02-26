@@ -128,6 +128,7 @@ def augment_data(image: tf.Tensor) -> tf.Tensor:
         return image
 
 
+
 def padding_inputs_width(image: tf.Tensor, target_shape: Tuple[int, int], increment: int) -> Tuple[tf.Tensor, tf.Tensor]:
 
     target_shape = tuple(target_shape)
