@@ -3,9 +3,9 @@ __author__ = 'solivr'
 
 import tensorflow as tf
 import numpy as np
+from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample
 from .config import Params, CONST
 from typing import Tuple
-
 
 def data_loader(csv_filename: str, params: Params, batch_size: int=128, data_augmentation: bool=False,
                 num_epochs: int=None, image_summaries: bool=False):
@@ -40,8 +40,8 @@ def data_loader(csv_filename: str, params: Params, batch_size: int=128, data_aug
 
         if image_summaries:
             tf.summary.image('input/image', prepared_batch.get('images'), max_outputs=10)
-        tf.summary.text('input/labels', prepared_batch.get('labels')[:10])
-        tf.summary.text('input/widths', tf.as_string(prepared_batch.get('images_widths')))
+            tf.summary.text('input/labels', prepared_batch.get('labels')[:10])
+            tf.summary.text('input/widths', tf.as_string(prepared_batch.get('images_widths')))
 
         return prepared_batch, prepared_batch.get('labels')
 
@@ -56,15 +56,15 @@ def image_reading(path: str, resized_size: Tuple[int, int]=None, data_augmentati
                     true_fn=lambda: tf.image.decode_jpeg(image_content, channels=1, try_recover_truncated=True), # TODO channels = 3 ?
                     false_fn=lambda: tf.image.decode_png(image_content, channels=1), name='image_decoding')
 
-    # Data augmentation
+        # Data augmentation
     if data_augmentation:
         image = augment_data(image)
 
-    # Padding
+        # Padding
     if padding:
         with tf.name_scope('padding'):
             image, img_width = padding_inputs_width(image, resized_size, increment=CONST.DIMENSION_REDUCTION_W_POOLING)
-    # Resize
+        # Resize
     else:
         image = tf.image.resize_images(image, size=resized_size)
         img_width = tf.shape(image)[1]
@@ -104,6 +104,7 @@ def random_rotation(img: tf.Tensor, max_rotation: float=0.1, crop: bool=True) ->
 
 
 def random_padding(image: tf.Tensor, max_pad_w: int=5, max_pad_h: int=10) -> tf.Tensor:
+
     w_pad = list(np.random.randint(0, max_pad_w, size=[2]))
     h_pad = list(np.random.randint(0, max_pad_h, size=[2]))
     paddings = [h_pad, w_pad, [0, 0]]
@@ -111,23 +112,97 @@ def random_padding(image: tf.Tensor, max_pad_w: int=5, max_pad_h: int=10) -> tf.
     return tf.pad(image, paddings, mode='CONSTANT', name='random_padding', constant_values=255)
 
 
+def tf_distortion_maps(img: tf.Tensor) -> tf.Tensor:
+
+
+    #Input image (h,w,1)
+    orig_shape = tf.shape(img)                   #output int32
+    alpha = tf.cast(orig_shape[0],tf.float32)
+
+    sigma = tf.abs(tf.random_normal([1], 8, 2))
+
+    #sigma = tf.cond(sigma < 4 , lambda: 4 , lambda: sigma)   
+
+    dispx = tf.random_uniform([orig_shape[0], orig_shape[1], 1], -1, 1) #Output tensor of shape (h,w,1) with values between -1 and 1 
+   
+    dispy = tf.random_uniform([orig_shape[0], orig_shape[1], 1], -1, 1)
+    
+    with tf.device("/device:GPU:0"):
+        dispx = alpha * gaussian_filter_tf(dispx, sigma)    
+        dispy = alpha * gaussian_filter_tf(dispy, sigma) # TODO: make sure you use the same sigma ?
+    
+    # use the broadcasting to achieve the same as meshgrid
+    
+    xs = tf.range(0, tf.cast(orig_shape[1],tf.float32), dtype=tf.float32)
+    ys = tf.range(0, tf.cast(orig_shape[0],tf.float32), dtype=tf.float32)
+   
+    ys = tf.expand_dims(ys, axis=1)
+
+    dispx += xs     
+    dispy += ys
+    
+    coords = tf.stack([dispy, dispx], axis=2)
+    
+    # batch of 1
+    coords = tf.expand_dims(coords, axis=0)     
+
+    img = tf.expand_dims(img, axis=0)   #The image is dimension 3 (grayscale) so we add 1 dimension
+    img = tf.squeeze(ImageSample((img,coords)), 0)
+     
+    return img
+
+
+# def apply_distortion_maps(img):
+#     """
+#     Applies distortion maps generated from ElasticDistortionState
+#     """
+#     orig_shape = img.shape
+#     print(img.shape)
+
+#     alpha = orig_shape[0]
+#   # sigma = max(5, np.random.normal(8, 2))
+#     sigma = 8
+
+#     print('Sigma:', sigma, 'Alpha:', alpha)
+
+#     dispx = np.random.uniform(-1, 1, size=orig_shape)
+#     dispy = np.random.uniform(-1, 1, size=orig_shape)
+#     dispx = alpha * ndimage.gaussian_filter(dispx, sigma)
+#     dispy = alpha * ndimage.gaussian_filter(dispy, sigma)
+
+#     xx, yy = np.mgrid[0:orig_shape[0], 0:orig_shape[1]]
+#     xx = xx + dispx
+#     yy = yy + dispy
+#     coords = np.vstack([xx.ravel(), yy.ravel()])
+#     img = ndimage.map_coordinates(img, coords, order=1, mode='nearest')
+    
+#     return img.(orig_shape)
+
+# def tf_distortion_map(img: tf.Tensor)-> tf.Tensor:
+
+#     image = tf.py_func(apply_distortion_maps, [img], tf.float32)
+
+#     #print(image.get_shape().as_list())
+
+#     return image
+
 def augment_data(image: tf.Tensor) -> tf.Tensor:
+
     with tf.name_scope('DataAugmentation'):
 
         # Random padding
         image = random_padding(image)
+        image = random_rotation(image, 0.05, crop=True)
 
         image = tf.image.random_brightness(image, max_delta=0.1)
         image = tf.image.random_contrast(image, 0.5, 1.5)
-        image = random_rotation(image, 0.05, crop=True)
+        image = tf_distortion_maps(image)
 
         if image.shape[-1] >= 3:
             image = tf.image.random_hue(image, 0.2)
             image = tf.image.random_saturation(image, 0.5, 1.5)
 
         return image
-
-
 
 def padding_inputs_width(image: tf.Tensor, target_shape: Tuple[int, int], increment: int) -> Tuple[tf.Tensor, tf.Tensor]:
 

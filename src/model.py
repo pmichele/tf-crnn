@@ -294,11 +294,7 @@ def crnn_fn(features, labels, mode, params):
         # Train op
         # --------
         learning_rate = tf.constant(parameters.learning_rate)
-
         
-        
-        
-
 
         if parameters.optimizer == 'ada':
             optimizer = tf.train.AdadeltaOptimizer(learning_rate)

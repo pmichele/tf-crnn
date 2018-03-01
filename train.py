@@ -82,6 +82,8 @@ if __name__ == '__main__':
     config_sess = tf.ConfigProto()
     config_sess.gpu_options.per_process_gpu_memory_fraction = 1.0
     config_sess.gpu_options.allow_growth = True
+    
+
 
     # Config estimator
     est_config = tf.estimator.RunConfig().replace(
@@ -99,7 +101,7 @@ if __name__ == '__main__':
                                        config=est_config
                                        )
 
-    SAMPLES_PER_FILE = 1000 # that's how we generated them
+    SAMPLES_PER_FILE = 10000 # that's how we generated them
 
     # Count number of image filenames in csv
     n_samples_eval = 0
