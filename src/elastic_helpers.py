@@ -48,7 +48,8 @@ def ImageSample(inputs, borderMode='repeat'):
     assert image.get_shape().ndims == 4 and mapping.get_shape().ndims == 4  
     input_shape = tf.shape(image)[1:3]
 
-    #input_shape = tf.shape(image).get_shape().as_list()[1:]
+    print("input_image_Sample" ,image.get_shape().as_list())
+    print("input_mapping_Sample" ,mapping.get_shape().as_list())
     #assert None not in input_shape
     
     "Images in ImageSample layer must have fully-defined shape"
@@ -75,6 +76,8 @@ def ImageSample(inputs, borderMode='repeat'):
                     sample(image, ucoor) * diffx * diffy,
                     sample(image, lyux) * neg_diffy * diffx,
                     sample(image, uylx) * diffy * neg_diffx], name='sampled')
+
+    print("ret:", ret.get_shape().as_list())
     
     if borderMode == 'constant':
         max_coor = tf.cast(tf.stack([input_shape[0] - 1, input_shape[1] - 1]),tf.float32)
@@ -132,3 +135,67 @@ def gaussian_filter_tf(image, sigma, name='Gaussian'):
         #print("gaussian output:", output.get_shape().ndims)
 
     return tf.squeeze((output), [0,-1]) #Specify first and last dimension to be removed 
+    
+def tf_distortion_maps(img: tf.Tensor, batch_size: int = 128) -> tf.Tensor:
+
+    #Input image (N,h,w,1)
+    
+    with tf.device("/device:GPU:0"):
+
+        orig_shape = img.shape.as_list() #output int32
+        
+        print("input shape:", img.get_shape().as_list())
+        
+        alpha = tf.cast(orig_shape[1],tf.float32)
+
+        sigma = tf.abs(tf.random_normal([1], 8, 2))
+
+        #sigma = tf.cond(sigma < 4 , lambda: 4 , lambda: sigma)   
+
+        dispx = tf.random_uniform([orig_shape[1], orig_shape[2], 1], -1, 1) #Output tensor of shape (h,w,1) with values between -1 and 1 
+
+        print("dispx", dispx.get_shape().as_list())
+
+
+        dispy = tf.random_uniform([orig_shape[1], orig_shape[2], 1], -1, 1)
+        
+        
+        dispx = alpha * gaussian_filter_tf(dispx, sigma)    
+        dispy = alpha * gaussian_filter_tf(dispy, sigma) # TODO: make sure you use the same sigma ?
+    
+    # use the broadcasting to achieve the same as meshgrid
+    
+        xs = tf.range(0, tf.cast(orig_shape[2],tf.float32), dtype=tf.float32)
+        ys = tf.range(0, tf.cast(orig_shape[1],tf.float32), dtype=tf.float32)
+       
+        ys = tf.expand_dims(ys, axis=1)
+
+        dispx += xs     
+        #print(tf.shape(xs).eval())
+        dispy += ys
+        #print(tf.shape(ys).eval())
+        
+        coords = tf.stack([dispy, dispx], axis=2)
+
+        print("coords first stack ", coords.get_shape().as_list())
+
+        #print("coords shape before expand :", tf.shape(coords).eval())
+        # batch of 1
+    #     coords = tf.expand_dims(coords, axis=0)     
+    #     print("coords shape after expand :", tf.shape(coords).eval())
+        
+        coords = [coords for i in range(batch_size)]
+        
+        coords = tf.stack(coords)  # stack coords to have dimension (B,H,W,2)
+
+        print("coords stacked ", coords.get_shape().as_list())
+        
+        #print("coords shape final:" , tf.shape(coords).eval())
+
+        #img = tf.expand_dims(img, axis=0)   #The image is dimension 3 (grayscale) so we add 1 dimension
+    
+    img = ImageSample((img,coords))
+    #print("elstic image shape", tf.shape(img.eval()))
+
+     
+    return img

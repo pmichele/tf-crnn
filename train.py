@@ -84,7 +84,6 @@ if __name__ == '__main__':
     config_sess.gpu_options.allow_growth = True
     
 
-
     # Config estimator
     est_config = tf.estimator.RunConfig().replace(
         keep_checkpoint_max=200,
@@ -101,7 +100,7 @@ if __name__ == '__main__':
                                        config=est_config
                                        )
 
-    SAMPLES_PER_FILE = 10000 # that's how we generated them
+    SAMPLES_PER_FILE = 10000 # that's how we generated them for with-corpus3
 
     # Count number of image filenames in csv
     n_samples_eval = 0
