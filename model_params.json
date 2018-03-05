@@ -6,11 +6,11 @@
   "optimizer": "adam",
   "keep_prob": 0.8,
   "evaluate_every_epoch": 1,
-  "eval_batch_size": 128,
-  "train_batch_size": 128,
+  "eval_batch_size": 512,
+  "train_batch_size": 512,
   "input_shape": [ 32, 256 ],
   "num_corpora": 7,
-  "output_model_dir": "/notebooks/generative/dynamic_elastic_2018_03_01/",
+  "output_model_dir": "/notebooks/generative/dynamic_elastic_2018_03_02/",
   "csv_delimiter": "\t",
   "csv_files_train": [
     "/notebooks/data/generative/with-corpus3/train"
