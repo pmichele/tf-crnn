@@ -38,12 +38,14 @@ def data_loader(csv_filename: str, params: Params, batch_size: int=128, data_aug
                                                 allow_smaller_final_batch=False,
                                                 name='prepared_batch_queue')
 
-        print((prepared_batch['images']))
 
+
+
+        print("batch before distortion",(prepared_batch['images']))
 
         prepared_batch['images'] = tf_distortion_maps(prepared_batch.get('images'),batch_size)
 
-        print((prepared_batch['images']))
+        print("batch after distortion",(prepared_batch['images']))
 
         if image_summaries:
 

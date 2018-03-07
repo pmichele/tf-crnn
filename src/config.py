@@ -113,6 +113,8 @@ class Params:
         self.output_model_dir = kwargs.get('output_model_dir')
         self.num_corpora = kwargs.get('num_corpora', 0)
         self._keep_prob_dropout = kwargs.get('keep_prob')
+        self.learning_rate_decay = kwargs.get('learning_rate_decay')
+        self.learning_rate_steps = kwargs.get('learning_rate_steps')
 
         assert self.optimizer in ['adam', 'rms', 'ada'], 'Unknown optimizer {}'.format(self.optimizer)
 
