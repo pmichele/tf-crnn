@@ -1,6 +1,6 @@
 {
   "gpu": "1",
-  "n_epochs": 10,
+  "n_epochs": 5,
   "save_interval": 5000.0,
   "learning_rate": 0.001,
   "learning_rate_decay" : 0.95,
@@ -8,11 +8,11 @@
   "optimizer": "adam",
   "keep_prob": 0.8,
   "evaluate_every_epoch": 1,
-  "eval_batch_size": 256,
-  "train_batch_size": 256,
+  "eval_batch_size": 512,
+  "train_batch_size": 512,
   "input_shape": [ 32, 256 ],
   "num_corpora": 7,
-  "output_model_dir": "/notebooks/generative/dynamic_elastic_2018_03_06/",
+  "output_model_dir": "/notebooks/generative/dynamic_elastic_2018_03_07/",
   "csv_delimiter": "\t",
   "csv_files_train": [
     "/notebooks/data/generative/with-corpus3/train"
