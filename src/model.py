@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ #!/usr/bin/env python
 __author__ = 'solivr'
 
 
@@ -246,6 +246,9 @@ def crnn_fn(features, labels, mode, params):
 
 
     logprob, raw_pred = deep_bidirectional_lstm(conv, features['corpora'], params=parameters, summaries=False)
+
+    print("logprob",logprob.get_shape().as_list())
+    print("raw_pred",raw_pred.get_shape().as_list())
 
     # Compute seq_len from image width
     n_pools = CONST.DIMENSION_REDUCTION_W_POOLING  # 2x2 pooling in dimension W on layer 1 and 2

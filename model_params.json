@@ -12,7 +12,7 @@
   "train_batch_size": 512,
   "input_shape": [ 32, 256 ],
   "num_corpora": 7,
-  "output_model_dir": "/notebooks/generative/dynamic_elastic_2018_03_07/",
+  "output_model_dir": "/notebooks/generative/dynamic_elastic_2018_03_09/",
   "csv_delimiter": "\t",
   "csv_files_train": [
     "/notebooks/data/generative/with-corpus3/train"
