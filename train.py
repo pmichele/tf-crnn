@@ -55,9 +55,9 @@ if __name__ == '__main__':
                             gpu=args.get('gpu')
                             )
 
-    assert type(parameters.csv_files_train) == list and type(parameters.csv_files_eval) == list and\
-           len(parameters.csv_files_train) > 0 and len(parameters.csv_files_eval) > 0,\
-            'Input CSV should be a list of files'
+    # assert type(parameters.csv_files_train) == list and type(parameters.csv_files_eval) == list and\
+    #        len(parameters.csv_files_train) > 0 and len(parameters.csv_files_eval) > 0,\
+    #         'Input CSV should be a list of files'
 
     # check input had conforming alphabet
     # params_alphabet = set(parameters.alphabet)
@@ -100,36 +100,46 @@ if __name__ == '__main__':
                                        config=est_config
                                        )
 
-    SAMPLES_PER_FILE = 10000 # that's how we generated them for with-corpus3
+    #SAMPLES_PER_FILE = 10000 # that's how we generated them for with-corpus3
 
-    # Count number of image filenames in csv
+    #Count number of image filenames in csv
+
     n_samples_eval = 0
-    for file in parameters.csv_files_eval:
-        with open(file, 'r', encoding='latin1') as csvfile:
-            reader = csv.reader(csvfile, delimiter=parameters.csv_delimiter)
-            n_samples_eval += len(list(reader))
 
-    if parameters.epoch_size is None:
-        parameters.epoch_size = len(parameters.csv_files_train) * SAMPLES_PER_FILE
-    else:
-        assert parameters.epoch_size <= len(parameters.csv_files_train) * SAMPLES_PER_FILE,\
-               'Epoch size too big'
+    record_iterator = tf.python_io.tf_record_iterator(path=parameters.tfrecords_eval[0]) 
+
+    for i,string_record in enumerate(record_iterator):
+        n_samples_eval += 1 
+
+    print("n_samples_eval",n_samples_eval)
+
+    # for file in parameters.csv_files_eval:
+    #     with open(file, 'r', encoding='latin1') as csvfile:
+    #         reader = csv.reader(csvfile, delimiter=parameters.csv_delimiter)
+    #         n_samples_eval += len(list(reader))
+
+    # if parameters.epoch_size is None:
+    #     parameters.epoch_size = len(parameters.csv_files_train) * SAMPLES_PER_FILE
+    # else:
+    #     assert parameters.epoch_size <= len(parameters.csv_files_train) * SAMPLES_PER_FILE,\
+    #            'Epoch size too big'
 
 
-    files_per_epoch = parameters.epoch_size // SAMPLES_PER_FILE #floor division
+    
+    #files_per_epoch = parameters.epoch_size // SAMPLES_PER_FILE #floor division
     try:
         for e in trange(0, parameters.n_epochs):
             # now we always evaluate every (sub-)epoch
-            epoch_train_subset = slice(e * files_per_epoch, (e+1) * files_per_epoch)
-            print(epoch_train_subset)
-            estimator.train(input_fn=data_loader(csv_filename=parameters.csv_files_train,
+            #epoch_train_subset = slice(e * files_per_epoch, (e+1) * files_per_epoch)
+            #print(epoch_train_subset)
+            estimator.train(input_fn=data_loader(tfrecords_filename=parameters.tfrecords_train,
                                                  params=parameters,
                                                  batch_size=parameters.train_batch_size,
                                                  num_epochs=1,
                                                  data_augmentation=True,
                                                  image_summaries=True))
             print('Train done')
-            estimator.evaluate(input_fn=data_loader(csv_filename=parameters.csv_files_eval,
+            estimator.evaluate(input_fn=data_loader(tfrecords_filename=parameters.tfrecords_eval,
                                                     params=parameters,
                                                     batch_size=parameters.eval_batch_size,
                                                     num_epochs=1),

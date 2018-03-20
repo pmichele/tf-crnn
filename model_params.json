@@ -14,14 +14,12 @@
   "num_corpora": 7,
   "output_model_dir": "/notebooks/generative/dynamic_elastic_2018_03_09/",
   "csv_delimiter": "\t",
-  "csv_files_train": [
-    "/notebooks/data/generative/with-corpus3/train"
+  "tfrecords_train": [
+    "/notebooks/tfrecords_data/with-corpus3-train.tfrecords"
   ],
-  "glob_files_train": "batch-*/result.tsv",
-  "csv_files_eval": [
-    "/notebooks/data/generative/with-corpus3/valid"
+  "tfrecords_eval": [
+    "/notebooks/tfrecords_data/with-corpus3-valid.tfrecords"
   ],
-  "glob_files_eval": "batch-*/result.tsv",
   "alphabet": "letters_digits_extended",
   "alphabet_decoding": "same"
 }

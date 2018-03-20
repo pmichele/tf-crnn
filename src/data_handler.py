@@ -7,38 +7,56 @@ from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_dist
 from .config import Params, CONST
 from typing import Tuple
 
-def data_loader(csv_filename: str, params: Params, batch_size: int=128, data_augmentation: bool=False,
+def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, data_augmentation: bool=False,
                 num_epochs: int=None, image_summaries: bool=False):
 
     def input_fn():
         # Choose case one csv file or list of csv files
-        if not isinstance(csv_filename, list):
-            filename_queue = tf.train.string_input_producer([csv_filename], num_epochs=num_epochs, name='filename_queue')
-        elif isinstance(csv_filename, list):
-            filename_queue = tf.train.string_input_producer(csv_filename, num_epochs=num_epochs, name='filename_queue')
+        # if not isinstance(csv_filename, list):
+        #     filename_queue = tf.train.string_input_producer([csv_filename], num_epochs=num_epochs, name='filename_queue')
+        # elif isinstance(csv_filename, list):
+        #     filename_queue = tf.train.string_input_producer(csv_filename, num_epochs=num_epochs, name='filename_queue')
+
+        filename_queue = tf.train.string_input_producer(tfrecords_filename, num_epochs=num_epochs, name='filename_queue')
 
         # Skip lines that have already been processed
-        reader = tf.TextLineReader(name='CSV_Reader', skip_header_lines=0)
-        key, value = reader.read(filename_queue, name='file_reading_op')
+        #reader = tf.TextLineReader(name='CSV_Reader', skip_header_lines=0)
 
-        default_line = [['None'], ['None'], [-1]]
-        path, label, corpus = tf.decode_csv(value, record_defaults=default_line, field_delim=params.csv_delimiter,
-                                            name='csv_reading_op')
+        reader = tf.TFRecordReader()
 
-        image, img_width = image_reading(path, resized_size=params.input_shape,
+        _ , value = reader.read(filename_queue, name='file_reading_op')
+
+        #default_line = [['None'], ['None'], [-1]]
+
+        features = tf.parse_single_example(
+            value,
+            features={
+                'image_raw': tf.FixedLenFeature([], tf.string),
+                'label': tf.FixedLenFeature([], tf.string),
+                'corpus': tf.FixedLenFeature([],tf.int64)
+                })        
+
+        #height = tf.cast(features['height'], tf.int32)
+        #width = tf.cast(features['width'], tf.int32)
+        image = tf.image.decode_png(features['image_raw'], channels = 1)
+        label = features['label']
+        corpus = tf.cast(features['corpus'],tf.int32)
+
+        # path, label, corpus = tf.decode_csv(value, record_defaults=default_line, field_delim=params.csv_delimiter,
+        #                                     name='csv_reading_op')
+
+        image, img_width = image_reading(image, resized_size=params.input_shape,
                                          data_augmentation=data_augmentation, padding=True)
 
-        to_batch = { 'images': image, 'images_widths': img_width, 'filenames': path,
+        to_batch = { 'images': image, 'images_widths': img_width,
                      'labels': label, 'corpora': corpus
         }
         prepared_batch = tf.train.shuffle_batch(to_batch,
                                                 batch_size=batch_size,
                                                 min_after_dequeue=1024,
                                                 num_threads=8, capacity=2048,
-                                                allow_smaller_final_batch=False,
+                                                 allow_smaller_final_batch=False,
                                                 name='prepared_batch_queue')
-
-
 
 
         print("batch before distortion",(prepared_batch['images']))
@@ -58,13 +76,13 @@ def data_loader(csv_filename: str, params: Params, batch_size: int=128, data_aug
     return input_fn
 
 
-def image_reading(path: str, resized_size: Tuple[int, int]=None, data_augmentation: bool=False,
+def image_reading(image: tf.Tensor, resized_size: Tuple[int, int]=None, data_augmentation: bool=False,
                   padding: bool=False) -> Tuple[tf.Tensor, tf.Tensor]:
     # Read image
-    image_content = tf.read_file(path, name='image_reader')
-    image = tf.cond(tf.equal(tf.string_split([path], '.').values[1], tf.constant('jpg', dtype=tf.string)),
-                    true_fn=lambda: tf.image.decode_jpeg(image_content, channels=1, try_recover_truncated=True), # TODO channels = 3 ?
-                    false_fn=lambda: tf.image.decode_png(image_content, channels=1), name='image_decoding')
+    #image_content = tf.read_file(path, name='image_reader')
+    # image = tf.cond(tf.equal(tf.string_split([path], '.').values[1], tf.constant('jpg', dtype=tf.string)),
+    #                 true_fn=lambda: tf.image.decode_jpeg(image_content, channels=1, try_recover_truncated=True), # TODO channels = 3 ?
+    #                 false_fn=lambda: tf.image.decode_png(image_content, channels=1), name='image_decoding')
 
         # Data augmentation
     if data_augmentation:
