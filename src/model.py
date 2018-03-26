@@ -4,6 +4,7 @@ __author__ = 'solivr'
 
 import tensorflow as tf
 from tensorflow.contrib.rnn import BasicLSTMCell
+from tensorflow.contrib.cudnn_rnn import CudnnLSTM 
 from .decoding import get_words_from_chars
 from .config import  Params, CONST
 
@@ -179,9 +180,9 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
 
     with tf.name_scope('deep_bidirectional_lstm'):
         # Forward direction cells
-        fw_cell_list = [BasicLSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
+        fw_cell_list = [CudnnLSTM(nh, forget_bias=1.0) for nh in list_n_hidden]
         # Backward direction cells
-        bw_cell_list = [BasicLSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
+        bw_cell_list = [CudnnLSTM(nh, forget_bias=1.0) for nh in list_n_hidden]
 
         lstm_net, _, _ = tf.contrib.rnn.stack_bidirectional_dynamic_rnn(fw_cell_list,
                                                                         bw_cell_list,
