@@ -1,6 +1,6 @@
 {
   "gpu": "1",
-  "n_epochs": 5,
+  "n_epochs": 10,
   "save_interval": 5000.0,
   "learning_rate": 0.001,
   "learning_rate_decay" : 0.95,
@@ -12,13 +12,13 @@
   "train_batch_size": 512,
   "input_shape": [ 32, 256 ],
   "num_corpora": 7,
-  "output_model_dir": "/notebooks/generative/dynamic_elastic_2018_03_09/",
+  "output_model_dir": "/notebooks/generative/10M_lstmcell_tf_2018_03_29/",
   "csv_delimiter": "\t",
   "tfrecords_train": [
-    "/notebooks/tfrecords_data/with-corpus3-train.tfrecords"
+    "/notebooks/tfrecords_data/10M_3gram/10M_3gram_train.tfrecords"
   ],
   "tfrecords_eval": [
-    "/notebooks/tfrecords_data/with-corpus3-valid.tfrecords"
+    "/notebooks/tfrecords_data/10M_3gram/10M_3gram_valid.tfrecords"
   ],
   "alphabet": "letters_digits_extended",
   "alphabet_decoding": "same"

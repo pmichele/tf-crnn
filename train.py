@@ -59,7 +59,7 @@ if __name__ == '__main__':
     #        len(parameters.csv_files_train) > 0 and len(parameters.csv_files_eval) > 0,\
     #         'Input CSV should be a list of files'
 
-    # check input had conforming alphabet
+    #check input had conforming alphabet
     # params_alphabet = set(parameters.alphabet)
     # input_alphabet = set()
     # for filename in parameters.csv_files_train + parameters.csv_files_eval:
