@@ -180,9 +180,9 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
 
     with tf.name_scope('deep_bidirectional_lstm'):
         # Forward direction cells
-        fw_cell_list = [BasicLSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
+        fw_cell_list = [LSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
         # Backward direction cells
-        bw_cell_list = [BasicLSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
+        bw_cell_list = [LSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
 
         lstm_net, _, _ = tf.contrib.rnn.stack_bidirectional_dynamic_rnn(fw_cell_list,
                                                                         bw_cell_list,
@@ -370,8 +370,6 @@ def crnn_fn(features, labels, mode, params):
                                }
             CER = tf.Print(CER, [CER], message='-- CER : ')
             accuracy = tf.Print(accuracy, [accuracy], message='-- Accuracy : ')
-
-            tf.summary.scalar("eval_loss", loss_ctc)
 
     else:
         eval_metric_ops = None

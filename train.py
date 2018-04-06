@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 __author__ = 'solivr'
-
 import argparse
 import os
 import csv
