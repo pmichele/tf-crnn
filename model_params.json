@@ -1,6 +1,6 @@
 {
   "gpu": "1",
-  "n_epochs": 10,
+  "n_epochs": 3,
   "save_interval": 5000.0,
   "learning_rate": 0.001,
   "learning_rate_decay" : 0.95,
@@ -12,14 +12,10 @@
   "train_batch_size": 512,
   "input_shape": [ 32, 256 ],
   "num_corpora": 7,
-  "output_model_dir": "/notebooks/generative/1M_3gram_2018_04_03/",
+  "output_model_dir": "/notebooks/generative/test_dir/",
   "csv_delimiter": "\t",
-  "tfrecords_train": [
-    "/notebooks/tfrecords_data/1M_3gram/1M_3gram_train.tfrecords"
-  ],
-  "tfrecords_eval": [
-    "/notebooks/tfrecords_data/100k_3gram/100k_3gram_train.tfrecords"
-  ],
+  "tfrecords_train": "/mnt/nfs/data/paul/tfrecords_data_nfs/10M_3gram/train/*.tfrecords",
+  "tfrecords_eval": "/notebooks/tfrecords_data/constat_pred_alphabet.tfrecords",
   "alphabet": "letters_digits_extended",
   "alphabet_decoding": "same"
 }

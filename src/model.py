@@ -296,12 +296,14 @@ def crnn_fn(features, labels, mode, params):
             loss_ctc = tf.reduce_mean(loss_ctc)
             loss_ctc = tf.Print(loss_ctc, [loss_ctc], message='* Loss : ')
 
+    
         global_step = tf.train.get_or_create_global_step()
         # # Create an ExponentialMovingAverage object
         ema = tf.train.ExponentialMovingAverage(decay=0.99, num_updates=global_step, zero_debias=True)
         # Create the shadow variables, and add op to maintain moving averages
         maintain_averages_op = ema.apply([loss_ctc])
         loss_ema = ema.average(loss_ctc)
+           
 
         # Train op
         # --------

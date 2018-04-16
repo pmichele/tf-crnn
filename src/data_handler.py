@@ -6,6 +6,7 @@ import numpy as np
 from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_distortion_maps
 from .config import Params, CONST
 from typing import Tuple
+import time 
 
 def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, data_augmentation: bool=False,
                 num_epochs: int=None, image_summaries: bool=False):
@@ -17,6 +18,7 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
         # elif isinstance(csv_filename, list):
         #     filename_queue = tf.train.string_input_producer(csv_filename, num_epochs=num_epochs, name='filename_queue')
 
+        start_time = time.time()
         filename_queue = tf.train.string_input_producer(tfrecords_filename, num_epochs=num_epochs, name='filename_queue')
 
         # Skip lines that have already been processed
@@ -59,11 +61,13 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
                                                 name='prepared_batch_queue')
 
 
-        print("batch before distortion",(prepared_batch['images']))
+        #print("batch before distortion",(prepared_batch['images']))
 
+        start_time_2 = time.time()
+        print("Time for preparing the batch without distortion {} sec".format(start_time_2 - start_time))
         prepared_batch['images'] = tf_distortion_maps(prepared_batch.get('images'),batch_size)
-
-        print("batch after distortion",(prepared_batch['images']))
+        print("Time after distortion {} sec".format(time.time()-start_time))
+        #print("batch after distortion",(prepared_batch['images']))
 
         if image_summaries:
 

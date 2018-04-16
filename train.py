@@ -13,6 +13,7 @@ import tensorflow as tf
 from src.model import crnn_fn
 from src.data_handler import data_loader
 from src.data_handler import preprocess_image_for_prediction
+import glob
 
 from src.config import Params, Alphabet, import_params_from_json
 
@@ -105,12 +106,12 @@ if __name__ == '__main__':
 
     n_samples_eval = 0
 
-    record_iterator = tf.python_io.tf_record_iterator(path=parameters.tfrecords_eval[0]) 
+    record_iterator = tf.python_io.tf_record_iterator(path=glob.glob(parameters.tfrecords_eval)[0]) 
 
     for i,string_record in enumerate(record_iterator):
         n_samples_eval += 1 
 
-    print("n_samples_eval",n_samples_eval)
+    print("n_samples_eval",n_samples_eval*len(glob.glob(parameters.tfrecords_eval)))
 
     # for file in parameters.csv_files_eval:
     #     with open(file, 'r', encoding='latin1') as csvfile:
@@ -131,14 +132,14 @@ if __name__ == '__main__':
             # now we always evaluate every (sub-)epoch
             #epoch_train_subset = slice(e * files_per_epoch, (e+1) * files_per_epoch)
             #print(epoch_train_subset)
-            estimator.train(input_fn=data_loader(tfrecords_filename=parameters.tfrecords_train,
+            estimator.train(input_fn=data_loader(tfrecords_filename=glob.glob(parameters.tfrecords_train),
                                                  params=parameters,
                                                  batch_size=parameters.train_batch_size,
                                                  num_epochs=1,
                                                  data_augmentation=True,
                                                  image_summaries=True))
             print('Train done')
-            estimator.evaluate(input_fn=data_loader(tfrecords_filename=parameters.tfrecords_eval,
+            estimator.evaluate(input_fn=data_loader(tfrecords_filename=glob.glob(parameters.tfrecords_eval),
                                                     params=parameters,
                                                     batch_size=parameters.eval_batch_size,
                                                     num_epochs=1),
@@ -146,8 +147,10 @@ if __name__ == '__main__':
                                )
             print('Eval done')
             
+        
             estimator.export_savedmodel(os.path.join(parameters.output_model_dir, 'export'),
                                 preprocess_image_for_prediction(fixed_height=parameters.input_shape[0], min_width=10))
+
 
     except KeyboardInterrupt:
         print('Interrupted')

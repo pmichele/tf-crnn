@@ -17,7 +17,7 @@ class Alphabet:
     LettersLowercase = 'abcdefghijklmnopqrstuvwxyz' + DiacriticalLower  # 26 + 12
     LettersCapitals  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + DiacriticalUpper  # 26 + 1
     Digits = '0123456789'    # 10
-    Symbols = " '.,-/"               #old: " '.,:-()/*°"  # 11
+    Symbols = " '.,-/_"               #old: " '.,:-()/*°"  # 11
     DecodingList = ['same', 'lowercase']
 
     BLANK_SYMBOL = '$'
