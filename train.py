@@ -111,7 +111,7 @@ if __name__ == '__main__':
     for i,string_record in enumerate(record_iterator):
         n_samples_eval += 1 
 
-    print("n_samples_eval",n_samples_eval*len(glob.glob(parameters.tfrecords_eval)))
+    print("n_samples_eval", n_samples_eval*len(glob.glob(parameters.tfrecords_eval)))
 
     # for file in parameters.csv_files_eval:
     #     with open(file, 'r', encoding='latin1') as csvfile:
