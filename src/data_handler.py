@@ -63,10 +63,10 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
 
         #print("batch before distortion",(prepared_batch['images']))
 
-        # start_time_2 = time.time()
-        # print("Time for preparing the batch without distortion {} sec".format(start_time_2 - start_time))
-        # prepared_batch['images'] = tf_distortion_maps(prepared_batch.get('images'),batch_size)
-        # print("Time after distortion {} sec".format(time.time()-start_time))
+        start_time_2 = time.time()
+        print("Time for preparing the batch without distortion {} sec".format(start_time_2 - start_time))
+        prepared_batch['images'] = tf_distortion_maps(prepared_batch.get('images'),batch_size)
+        print("Time after distortion {} sec".format(time.time()-start_time))
         
         #print("batch after distortion",(prepared_batch['images']))
 
