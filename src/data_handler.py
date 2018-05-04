@@ -60,7 +60,6 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
                                                  allow_smaller_final_batch=False,
                                                 name='prepared_batch_queue')
 
-
         #print("batch before distortion",(prepared_batch['images']))
 
         # start_time_2 = time.time()
