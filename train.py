@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     os.environ['CUDA_VISIBLE_DEVICES'] = parameters.gpu
     config_sess = tf.ConfigProto()
-    config_sess.gpu_options.per_process_gpu_memory_fraction = 1.0
+    #config_sess.gpu_options.per_process_gpu_memory_fraction = 1.0
     config_sess.gpu_options.allow_growth = True
     
 
