@@ -17,7 +17,7 @@ class Alphabet:
     LettersLowercase = 'abcdefghijklmnopqrstuvwxyz' + DiacriticalLower  # 26 + 12
     LettersCapitals  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + DiacriticalUpper  # 26 + 1
     Digits = '0123456789'    # 10
-    Symbols = " '.,-/"               #old: " '.,:-()/*°"  # 11
+    Symbols = " '.,-/_"               #old: " '.,:-()/*°"  # 11
     DecodingList = ['same', 'lowercase']
 
     BLANK_SYMBOL = '$'
@@ -100,19 +100,24 @@ class Params:
         # Alphabet to use (from class Alphabet)
         self.alphabet = kwargs.get('alphabet')
 
-        self.csv_delimiter = kwargs.get('csv_delimiter', ';')
+        # self.csv_delimiter = kwargs.get('csv_delimiter', ';')
 
-        self.csv_files_train = kwargs.get('csv_files_train')
-        if kwargs.get('glob_files_train'):
-            self.csv_files_train = self.expand_files(self.csv_files_train, kwargs['glob_files_train'])
+        # self.csv_files_train = kwargs.get('csv_files_train')
+        # if kwargs.get('glob_files_train'):
+        #     self.csv_files_train = self.expand_files(self.csv_files_train, kwargs['glob_files_train'])
 
-        self.csv_files_eval = kwargs.get('csv_files_eval')
-        if kwargs.get('glob_files_eval'):
-            self.csv_files_eval = self.expand_files(self.csv_files_eval, kwargs['glob_files_eval'])
+        # self.csv_files_eval = kwargs.get('csv_files_eval')
+        # if kwargs.get('glob_files_eval'):
+        #     self.csv_files_eval = self.expand_files(self.csv_files_eval, kwargs['glob_files_eval'])
 
         self.output_model_dir = kwargs.get('output_model_dir')
         self.num_corpora = kwargs.get('num_corpora', 0)
         self._keep_prob_dropout = kwargs.get('keep_prob')
+        self.learning_rate_decay = kwargs.get('learning_rate_decay')
+        self.learning_rate_steps = kwargs.get('learning_rate_steps')
+
+        self.tfrecords_train = kwargs.get('tfrecords_train')
+        self.tfrecords_eval = kwargs.get('tfrecords_eval')
 
         assert self.optimizer in ['adam', 'rms', 'ada'], 'Unknown optimizer {}'.format(self.optimizer)
 

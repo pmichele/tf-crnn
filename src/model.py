@@ -3,9 +3,10 @@ __author__ = 'solivr'
 
 
 import tensorflow as tf
-from tensorflow.contrib.rnn import BasicLSTMCell
+from tensorflow.contrib.rnn import BasicLSTMCell, LSTMCell
+from tensorflow.contrib.cudnn_rnn import CudnnLSTM 
 from .decoding import get_words_from_chars
-from .config import Params, CONST
+from .config import  Params, CONST
 
 
 def weightVar(shape, mean=0.0, stddev=0.02, name='weights'):
@@ -168,15 +169,20 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
     with tf.name_scope('corpus_concat'):
         corpora = tf.expand_dims(corpora, axis=1) # add the time dimension
         corpora = tf.one_hot(corpora, depth=params.num_corpora, dtype=inputs.dtype, name='corpus_to_onehot')
-        multiples = tf.stack([1, tf.shape(inputs)[1], 1])
+        multiples = tf.stack([1, tf.shape(inputs)[1], 1])     #tf.shape(input)[1] = width 
+
+        print("multiples", multiples.get_shape().as_list())
         corpora = tf.tile(corpora, multiples)
+        print("corpora", corpora.get_shape().as_list())
         inputs = tf.concat((corpora, inputs), axis=2, name='concat_corpus')
+
+        print("lstm inputs after concat", inputs.get_shape().as_list())
 
     with tf.name_scope('deep_bidirectional_lstm'):
         # Forward direction cells
-        fw_cell_list = [BasicLSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
+        fw_cell_list = [LSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
         # Backward direction cells
-        bw_cell_list = [BasicLSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
+        bw_cell_list = [LSTMCell(nh, forget_bias=1.0) for nh in list_n_hidden]
 
         lstm_net, _, _ = tf.contrib.rnn.stack_bidirectional_dynamic_rnn(fw_cell_list,
                                                                         bw_cell_list,
@@ -238,11 +244,16 @@ def crnn_fn(features, labels, mode, params):
         parameters.keep_prob_dropout = 1.0
 
     conv = deep_cnn(features['images'], (mode == tf.estimator.ModeKeys.TRAIN), summaries=False)
+
+
     logprob, raw_pred = deep_bidirectional_lstm(conv, features['corpora'], params=parameters, summaries=False)
+
+    print("logprob",logprob.get_shape().as_list())
+    print("raw_pred",raw_pred.get_shape().as_list())
 
     # Compute seq_len from image width
     n_pools = CONST.DIMENSION_REDUCTION_W_POOLING  # 2x2 pooling in dimension W on layer 1 and 2
-    seq_len_inputs = tf.divide(features['images_widths'], n_pools, name='seq_len_input_op') - 1
+    seq_len_inputs = tf.divide(features['images_widths'], n_pools, name='seq_len_input_op') - 1     
 
     predictions_dict = {'prob': logprob,
                         'raw_predictions': raw_pred,
@@ -273,6 +284,7 @@ def crnn_fn(features, labels, mode, params):
         # Loss
         # ----
         # >>> Cannot have longer labels than predictions -> error
+        
         with tf.control_dependencies([tf.less_equal(sparse_code_target.dense_shape[1], tf.reduce_max(tf.cast(seq_len_inputs, tf.int64)))]):
             loss_ctc = tf.nn.ctc_loss(labels=sparse_code_target,
                                       inputs=predictions_dict['prob'],
@@ -284,16 +296,21 @@ def crnn_fn(features, labels, mode, params):
             loss_ctc = tf.reduce_mean(loss_ctc)
             loss_ctc = tf.Print(loss_ctc, [loss_ctc], message='* Loss : ')
 
+    
         global_step = tf.train.get_or_create_global_step()
         # # Create an ExponentialMovingAverage object
         ema = tf.train.ExponentialMovingAverage(decay=0.99, num_updates=global_step, zero_debias=True)
         # Create the shadow variables, and add op to maintain moving averages
         maintain_averages_op = ema.apply([loss_ctc])
         loss_ema = ema.average(loss_ctc)
+           
 
         # Train op
         # --------
-        learning_rate = tf.constant(parameters.learning_rate)
+        #learning_rate = tf.constant(parameters.learning_rate)
+
+        learning_rate = tf.train.exponential_decay(parameters.learning_rate, global_step, parameters.learning_rate_steps, parameters.learning_rate_decay, staircase = True)
+        
 
         if parameters.optimizer == 'ada':
             optimizer = tf.train.AdadeltaOptimizer(learning_rate)

@@ -3,68 +3,100 @@ __author__ = 'solivr'
 
 import tensorflow as tf
 import numpy as np
+from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_distortion_maps
 from .config import Params, CONST
 from typing import Tuple
+import time 
 
-
-def data_loader(csv_filename: str, params: Params, batch_size: int=128, data_augmentation: bool=False,
+def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, data_augmentation: bool=False,
                 num_epochs: int=None, image_summaries: bool=False):
 
     def input_fn():
         # Choose case one csv file or list of csv files
-        if not isinstance(csv_filename, list):
-            filename_queue = tf.train.string_input_producer([csv_filename], num_epochs=num_epochs, name='filename_queue')
-        elif isinstance(csv_filename, list):
-            filename_queue = tf.train.string_input_producer(csv_filename, num_epochs=num_epochs, name='filename_queue')
+        # if not isinstance(csv_filename, list):
+        #     filename_queue = tf.train.string_input_producer([csv_filename], num_epochs=num_epochs, name='filename_queue')
+        # elif isinstance(csv_filename, list):
+        #     filename_queue = tf.train.string_input_producer(csv_filename, num_epochs=num_epochs, name='filename_queue')
+
+        start_time = time.time()
+        filename_queue = tf.train.string_input_producer(tfrecords_filename, num_epochs=num_epochs, name='filename_queue')
 
         # Skip lines that have already been processed
-        reader = tf.TextLineReader(name='CSV_Reader', skip_header_lines=0)
-        key, value = reader.read(filename_queue, name='file_reading_op')
+        #reader = tf.TextLineReader(name='CSV_Reader', skip_header_lines=0)
 
-        default_line = [['None'], ['None'], [-1]]
-        path, label, corpus = tf.decode_csv(value, record_defaults=default_line, field_delim=params.csv_delimiter,
-                                            name='csv_reading_op')
+        reader = tf.TFRecordReader()
 
-        image, img_width = image_reading(path, resized_size=params.input_shape,
+        _ , value = reader.read(filename_queue, name='file_reading_op')
+
+        #default_line = [['None'], ['None'], [-1]]
+
+        features = tf.parse_single_example(
+            value,
+            features={
+                'image_raw': tf.FixedLenFeature([], tf.string),
+                'label': tf.FixedLenFeature([], tf.string),
+                'corpus': tf.FixedLenFeature([],tf.int64)
+                })        
+
+        #height = tf.cast(features['height'], tf.int32)
+        #width = tf.cast(features['width'], tf.int32)
+        image = tf.image.decode_png(features['image_raw'], channels = 1)
+        label = features['label']
+        corpus = tf.cast(features['corpus'],tf.int32)
+
+        # path, label, corpus = tf.decode_csv(value, record_defaults=default_line, field_delim=params.csv_delimiter,
+        #                                     name='csv_reading_op')
+
+        image, img_width = image_reading(image, resized_size=params.input_shape,
                                          data_augmentation=data_augmentation, padding=True)
 
-        to_batch = { 'images': image, 'images_widths': img_width, 'filenames': path,
+        to_batch = { 'images': image, 'images_widths': img_width,
                      'labels': label, 'corpora': corpus
         }
         prepared_batch = tf.train.shuffle_batch(to_batch,
                                                 batch_size=batch_size,
                                                 min_after_dequeue=1024,
                                                 num_threads=8, capacity=2048,
-                                                allow_smaller_final_batch=False,
+                                                 allow_smaller_final_batch=False,
                                                 name='prepared_batch_queue')
 
+        #print("batch before distortion",(prepared_batch['images']))
+
+        # start_time_2 = time.time()
+        # print("Time for preparing the batch without distortion {} sec".format(start_time_2 - start_time))
+        # prepared_batch['images'] = tf_distortion_maps(prepared_batch.get('images'),batch_size)
+        # print("Time after distortion {} sec".format(time.time()-start_time))
+        
+        #print("batch after distortion",(prepared_batch['images']))
+
         if image_summaries:
+
             tf.summary.image('input/image', prepared_batch.get('images'), max_outputs=10)
-        tf.summary.text('input/labels', prepared_batch.get('labels')[:10])
-        tf.summary.text('input/widths', tf.as_string(prepared_batch.get('images_widths')))
+            tf.summary.text('input/labels', prepared_batch.get('labels')[:10])
+            tf.summary.text('input/widths', tf.as_string(prepared_batch.get('images_widths')))
 
         return prepared_batch, prepared_batch.get('labels')
 
     return input_fn
 
 
-def image_reading(path: str, resized_size: Tuple[int, int]=None, data_augmentation: bool=False,
+def image_reading(image: tf.Tensor, resized_size: Tuple[int, int]=None, data_augmentation: bool=False,
                   padding: bool=False) -> Tuple[tf.Tensor, tf.Tensor]:
     # Read image
-    image_content = tf.read_file(path, name='image_reader')
-    image = tf.cond(tf.equal(tf.string_split([path], '.').values[1], tf.constant('jpg', dtype=tf.string)),
-                    true_fn=lambda: tf.image.decode_jpeg(image_content, channels=1, try_recover_truncated=True), # TODO channels = 3 ?
-                    false_fn=lambda: tf.image.decode_png(image_content, channels=1), name='image_decoding')
+    #image_content = tf.read_file(path, name='image_reader')
+    # image = tf.cond(tf.equal(tf.string_split([path], '.').values[1], tf.constant('jpg', dtype=tf.string)),
+    #                 true_fn=lambda: tf.image.decode_jpeg(image_content, channels=1, try_recover_truncated=True), # TODO channels = 3 ?
+    #                 false_fn=lambda: tf.image.decode_png(image_content, channels=1), name='image_decoding')
 
-    # Data augmentation
+        # Data augmentation
     if data_augmentation:
         image = augment_data(image)
 
-    # Padding
+        # Padding
     if padding:
         with tf.name_scope('padding'):
             image, img_width = padding_inputs_width(image, resized_size, increment=CONST.DIMENSION_REDUCTION_W_POOLING)
-    # Resize
+        # Resize
     else:
         image = tf.image.resize_images(image, size=resized_size)
         img_width = tf.shape(image)[1]
@@ -104,6 +136,7 @@ def random_rotation(img: tf.Tensor, max_rotation: float=0.1, crop: bool=True) ->
 
 
 def random_padding(image: tf.Tensor, max_pad_w: int=5, max_pad_h: int=10) -> tf.Tensor:
+
     w_pad = list(np.random.randint(0, max_pad_w, size=[2]))
     h_pad = list(np.random.randint(0, max_pad_h, size=[2]))
     paddings = [h_pad, w_pad, [0, 0]]
@@ -112,21 +145,22 @@ def random_padding(image: tf.Tensor, max_pad_w: int=5, max_pad_h: int=10) -> tf.
 
 
 def augment_data(image: tf.Tensor) -> tf.Tensor:
+
     with tf.name_scope('DataAugmentation'):
 
         # Random padding
         image = random_padding(image)
+        image = random_rotation(image, 0.05, crop=True)
 
         image = tf.image.random_brightness(image, max_delta=0.1)
         image = tf.image.random_contrast(image, 0.5, 1.5)
-        image = random_rotation(image, 0.05, crop=True)
+        #image = tf_distortion_maps(image)  #deformation image by image 
 
         if image.shape[-1] >= 3:
             image = tf.image.random_hue(image, 0.2)
             image = tf.image.random_saturation(image, 0.5, 1.5)
 
         return image
-
 
 def padding_inputs_width(image: tf.Tensor, target_shape: Tuple[int, int], increment: int) -> Tuple[tf.Tensor, tf.Tensor]:
 
