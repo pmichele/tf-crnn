@@ -167,17 +167,17 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
 
     # add the corpora to all input times; TODO: what values should we use for one-hot? (0,1) ?
 
-    # with tf.name_scope('corpus_concat'):
-    #     corpora = tf.expand_dims(corpora, axis=1) # add the time dimension
-    #     corpora = tf.one_hot(corpora, depth=params.num_corpora, dtype=inputs.dtype, name='corpus_to_onehot')
-    #     multiples = tf.stack([1, tf.shape(inputs)[1], 1])     #tf.shape(input)[1] = width 
+    with tf.name_scope('corpus_concat'):
+        corpora = tf.expand_dims(corpora, axis=1) # add the time dimension
+        corpora = tf.one_hot(corpora, depth=params.num_corpora, dtype=inputs.dtype, name='corpus_to_onehot')
+        multiples = tf.stack([1, tf.shape(inputs)[1], 1])     #tf.shape(input)[1] = width 
 
-    #     print("multiples", multiples.get_shape().as_list())
-    #     corpora = tf.tile(corpora, multiples)
-    #     print("corpora", corpora.get_shape().as_list())
-    #     inputs = tf.concat((corpora, inputs), axis=2, name='concat_corpus')
+        print("multiples", multiples.get_shape().as_list())
+        corpora = tf.tile(corpora, multiples)
+        print("corpora", corpora.get_shape().as_list())
+        inputs = tf.concat((corpora, inputs), axis=2, name='concat_corpus')
 
-    #     print("lstm inputs after concat", inputs.get_shape().as_list())
+        print("lstm inputs after concat", inputs.get_shape().as_list())
 
     with tf.name_scope('deep_bidirectional_lstm'):
         # Forward direction cells
@@ -312,16 +312,21 @@ def crnn_fn(features, labels, mode, params):
 
         learning_rate = tf.train.exponential_decay(parameters.learning_rate, global_step, parameters.learning_rate_steps, parameters.learning_rate_decay, staircase = True)
         
-
         if parameters.optimizer == 'ada':
             optimizer = tf.train.AdadeltaOptimizer(learning_rate)
         elif parameters.optimizer == 'adam':
-            optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5, epsilon=1e-07)
+            optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5, epsilon=1e-07) # at 1e-08 sometimes exploding gradient 
         elif parameters.optimizer == 'rms':
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
 
+        if not parameters.train_cnn:
+            trainable = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'deep_bidirectional_lstm')
+        else:
+            trainable = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        opt_op = optimizer.minimize(loss_ctc, global_step=global_step)
+        opt_op = optimizer.minimize(loss_ctc, global_step=global_step, var_list=trainable)
+
         with tf.control_dependencies(update_ops + [opt_op]):
             train_op = tf.group(maintain_averages_op)
 
