@@ -143,7 +143,7 @@ if __name__ == '__main__':
                                                     params=parameters,
                                                     batch_size=parameters.eval_batch_size,
                                                     num_epochs=1),
-                               steps=np.floor(n_samples_eval/parameters.eval_batch_size)
+                               steps=max(np.floor(n_samples_eval/parameters.eval_batch_size),1) #minimum 1 in case n_samples eval < 512 
                                )
             print('Eval done')
             

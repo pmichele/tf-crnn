@@ -12,11 +12,6 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
                 num_epochs: int=None, image_summaries: bool=False):
 
     def input_fn():
-        # Choose case one csv file or list of csv files
-        # if not isinstance(csv_filename, list):
-        #     filename_queue = tf.train.string_input_producer([csv_filename], num_epochs=num_epochs, name='filename_queue')
-        # elif isinstance(csv_filename, list):
-        #     filename_queue = tf.train.string_input_producer(csv_filename, num_epochs=num_epochs, name='filename_queue')
 
         start_time = time.time()
         filename_queue = tf.train.string_input_producer(tfrecords_filename, num_epochs=num_epochs, name='filename_queue')
@@ -26,7 +21,7 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
 
         reader = tf.TFRecordReader()
 
-        _ , value = reader.read(filename_queue, name='file_reading_op')
+        _ ,value = reader.read(filename_queue, name='file_reading_op')
 
         #default_line = [['None'], ['None'], [-1]]
 
@@ -38,11 +33,13 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
                 'corpus': tf.FixedLenFeature([],tf.int64)
                 })        
 
+
         #height = tf.cast(features['height'], tf.int32)
         #width = tf.cast(features['width'], tf.int32)
-        image = tf.image.decode_png(features['image_raw'], channels = 1)
+        image = tf.image.decode_png(features['image_raw'], channels=1)
         label = features['label']
         corpus = tf.cast(features['corpus'],tf.int32)
+
 
         # path, label, corpus = tf.decode_csv(value, record_defaults=default_line, field_delim=params.csv_delimiter,
         #                                     name='csv_reading_op')
@@ -53,11 +50,20 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
         to_batch = { 'images': image, 'images_widths': img_width,
                      'labels': label, 'corpora': corpus
         }
+
+        # prepared_batch = tf.train.maybe_shuffle_batch(to_batch,
+        #                                         batch_size=batch_size,
+        #                                         keep_input=tf.equal(to_batch['corpora'], 0),
+        #                                         min_after_dequeue=1024,
+        #                                         num_threads=8, capacity=2048,
+        #                                         allow_smaller_final_batch=False,
+        #                                         name='prepared_batch_queue')
+
         prepared_batch = tf.train.shuffle_batch(to_batch,
                                                 batch_size=batch_size,
                                                 min_after_dequeue=1024,
                                                 num_threads=8, capacity=2048,
-                                                 allow_smaller_final_batch=False,
+                                                allow_smaller_final_batch=False,
                                                 name='prepared_batch_queue')
 
         #print("batch before distortion",(prepared_batch['images']))
