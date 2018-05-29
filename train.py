@@ -125,7 +125,6 @@ if __name__ == '__main__':
     #            'Epoch size too big'
 
 
-    
     #files_per_epoch = parameters.epoch_size // SAMPLES_PER_FILE #floor division
     try:
         for e in trange(0, parameters.n_epochs):

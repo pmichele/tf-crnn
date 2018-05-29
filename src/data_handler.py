@@ -21,7 +21,7 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
 
         reader = tf.TFRecordReader()
 
-        _ ,value = reader.read(filename_queue, name='file_reading_op')
+        _,value = reader.read(filename_queue, name='file_reading_op')
 
         #default_line = [['None'], ['None'], [-1]]
 
@@ -51,14 +51,6 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
                      'labels': label, 'corpora': corpus
         }
 
-        # prepared_batch = tf.train.maybe_shuffle_batch(to_batch,
-        #                                         batch_size=batch_size,
-        #                                         keep_input=tf.equal(to_batch['corpora'], 0),
-        #                                         min_after_dequeue=1024,
-        #                                         num_threads=8, capacity=2048,
-        #                                         allow_smaller_final_batch=False,
-        #                                         name='prepared_batch_queue')
-
         prepared_batch = tf.train.shuffle_batch(to_batch,
                                                 batch_size=batch_size,
                                                 min_after_dequeue=1024,
@@ -66,7 +58,7 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
                                                 allow_smaller_final_batch=False,
                                                 name='prepared_batch_queue')
 
-        #print("batch before distortion",(prepared_batch['images']))
+        print("batch before distortion",(prepared_batch['images']))
 
         # start_time_2 = time.time()
         # print("Time for preparing the batch without distortion {} sec".format(start_time_2 - start_time))

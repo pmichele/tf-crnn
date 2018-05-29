@@ -1,6 +1,6 @@
 {
-  "gpu": "0",
-  "n_epochs": 12,
+  "gpu": "1",
+  "n_epochs": 20,
   "save_interval": 5000.0,
   "learning_rate": 0.001,
   "learning_rate_decay" : 0.95,
@@ -8,15 +8,15 @@
   "optimizer": "adam",
   "keep_prob": 0.8,
   "evaluate_every_epoch": 1,
-  "eval_batch_size": 128,
-  "train_batch_size": 128,
+  "eval_batch_size": 512,
+  "train_batch_size": 512,
   "input_shape": [ 32, 256 ],
   "num_corpora": 10,
-  "output_model_dir": "/mnt/nfs/data/paul/generative/2M_noise/bytype/licenseplate_cnn_6/",
+  "output_model_dir": "/mnt/nfs/data/paul/generative/2M_dilgrad_2018_05_28/",
   "csv_delimiter": "\t",
-  "tfrecords_train": "/notebooks/tfrecords_data/2M_noise/bytype/type_6.tfrecords",
-  "tfrecords_eval": "/notebooks/tfrecords_data/test_set/bytype/constat_pred_type_6.tfrecords",
+  "tfrecords_train": "/notebooks/tfrecords_data/2M_dilgrad/train/*",
+  "tfrecords_eval": "/notebooks/tfrecords_data/test_set/constat_pred_100_10_types_latin1_byreport.tfrecords",
   "alphabet": "letters_digits_extended",
   "alphabet_decoding": "same",
-  "train_cnn": 0
+  "train_cnn": 1
 }

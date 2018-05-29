@@ -200,7 +200,7 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
             rnn_reshaped = tf.reshape(lstm_net, [-1, shape[-1]])  # [batch x width, 2*n_hidden]
 
         with tf.variable_scope('fully_connected'):
-            W = weightVar([list_n_hidden[-1]*2, params.n_classes])
+            W = weightVar([list_n_hidden[-1]*2, params.n_classes]) 
             b = biasVar([params.n_classes])
             fc_out = tf.nn.bias_add(tf.matmul(rnn_reshaped, W), b)
 
@@ -321,8 +321,10 @@ def crnn_fn(features, labels, mode, params):
 
         if not parameters.train_cnn:
             trainable = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'deep_bidirectional_lstm')
+            print('not cnnnnn')
         else:
             trainable = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+            print('cnnnnn')
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         opt_op = optimizer.minimize(loss_ctc, global_step=global_step, var_list=trainable)
