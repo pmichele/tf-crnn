@@ -166,6 +166,7 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
     list_n_hidden = [256, 256]
 
     # add the corpora to all input times; TODO: what values should we use for one-hot? (0,1) ?
+
     with tf.name_scope('corpus_concat'):
         corpora = tf.expand_dims(corpora, axis=1) # add the time dimension
         corpora = tf.one_hot(corpora, depth=params.num_corpora, dtype=inputs.dtype, name='corpus_to_onehot')
@@ -199,7 +200,7 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
             rnn_reshaped = tf.reshape(lstm_net, [-1, shape[-1]])  # [batch x width, 2*n_hidden]
 
         with tf.variable_scope('fully_connected'):
-            W = weightVar([list_n_hidden[-1]*2, params.n_classes])
+            W = weightVar([list_n_hidden[-1]*2, params.n_classes]) 
             b = biasVar([params.n_classes])
             fc_out = tf.nn.bias_add(tf.matmul(rnn_reshaped, W), b)
 
@@ -311,16 +312,23 @@ def crnn_fn(features, labels, mode, params):
 
         learning_rate = tf.train.exponential_decay(parameters.learning_rate, global_step, parameters.learning_rate_steps, parameters.learning_rate_decay, staircase = True)
         
-
         if parameters.optimizer == 'ada':
             optimizer = tf.train.AdadeltaOptimizer(learning_rate)
         elif parameters.optimizer == 'adam':
-            optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5)
+            optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5, epsilon=1e-07) # at 1e-08 sometimes exploding gradient 
         elif parameters.optimizer == 'rms':
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
 
+        if not parameters.train_cnn:
+            trainable = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'deep_bidirectional_lstm')
+            print('not cnnnnn')
+        else:
+            trainable = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+            print('cnnnnn')
+
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        opt_op = optimizer.minimize(loss_ctc, global_step=global_step)
+        opt_op = optimizer.minimize(loss_ctc, global_step=global_step, var_list=trainable)
+
         with tf.control_dependencies(update_ops + [opt_op]):
             train_op = tf.group(maintain_averages_op)
 

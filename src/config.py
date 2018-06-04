@@ -118,6 +118,7 @@ class Params:
 
         self.tfrecords_train = kwargs.get('tfrecords_train')
         self.tfrecords_eval = kwargs.get('tfrecords_eval')
+        self.train_cnn = kwargs.get('train_cnn')
 
         assert self.optimizer in ['adam', 'rms', 'ada'], 'Unknown optimizer {}'.format(self.optimizer)
 
