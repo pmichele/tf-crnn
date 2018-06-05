@@ -6,7 +6,7 @@ import numpy as np
 from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_distortion_maps
 from .config import Params, CONST
 from typing import Tuple
-import time 
+import time
 
 def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, data_augmentation: bool=False,
                 num_epochs: int=None, image_summaries: bool=False):
@@ -31,7 +31,7 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
                 'image_raw': tf.FixedLenFeature([], tf.string),
                 'label': tf.FixedLenFeature([], tf.string),
                 'corpus': tf.FixedLenFeature([],tf.int64)
-                })        
+                })
 
 
         #height = tf.cast(features['height'], tf.int32)
@@ -64,7 +64,7 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
         # print("Time for preparing the batch without distortion {} sec".format(start_time_2 - start_time))
         # prepared_batch['images'] = tf_distortion_maps(prepared_batch.get('images'),batch_size)
         # print("Time after distortion {} sec".format(time.time()-start_time))
-        
+
         #print("batch after distortion",(prepared_batch['images']))
 
         if image_summaries:
@@ -80,21 +80,16 @@ def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, da
 
 def image_reading(image: tf.Tensor, resized_size: Tuple[int, int]=None, data_augmentation: bool=False,
                   padding: bool=False) -> Tuple[tf.Tensor, tf.Tensor]:
-    # Read image
-    #image_content = tf.read_file(path, name='image_reader')
-    # image = tf.cond(tf.equal(tf.string_split([path], '.').values[1], tf.constant('jpg', dtype=tf.string)),
-    #                 true_fn=lambda: tf.image.decode_jpeg(image_content, channels=1, try_recover_truncated=True), # TODO channels = 3 ?
-    #                 false_fn=lambda: tf.image.decode_png(image_content, channels=1), name='image_decoding')
 
-        # Data augmentation
+    # Data augmentation
     if data_augmentation:
         image = augment_data(image)
 
-        # Padding
+    # Padding
     if padding:
         with tf.name_scope('padding'):
             image, img_width = padding_inputs_width(image, resized_size, increment=CONST.DIMENSION_REDUCTION_W_POOLING)
-        # Resize
+    # Resize
     else:
         image = tf.image.resize_images(image, size=resized_size)
         img_width = tf.shape(image)[1]
@@ -152,7 +147,7 @@ def augment_data(image: tf.Tensor) -> tf.Tensor:
 
         image = tf.image.random_brightness(image, max_delta=0.1)
         image = tf.image.random_contrast(image, 0.5, 1.5)
-        #image = tf_distortion_maps(image)  #deformation image by image 
+        #image = tf_distortion_maps(image)  #deformation image by image
 
         if image.shape[-1] >= 3:
             image = tf.image.random_hue(image, 0.2)

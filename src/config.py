@@ -82,39 +82,31 @@ class Params:
 
         # Initial value of learining rate (exponential learning rate is used)
         self.learning_rate = kwargs.get('learning_rate', 1e-4)
-        # # Learning rate decay for exponential learning rate
-        # self.learning_decay_rate = kwargs.get('learning_decay_rate', 0.96)
-        # # Decay steps for exponential learning rate
-        # self.learning_decay_steps = kwargs.get('learning_decay_steps', 1000)
+        # Learning rate decay for exponential learning rate. Both should be set or unset
+        self.learning_rate_decay = kwargs.get('learning_rate_decay')
+        self.learning_rate_steps = kwargs.get('learning_rate_steps')
+        assert not (self.learning_rate_decay is not None) ^ (self.learning_rate_steps is not None),\
+            'Either both or none of (learning_rate_decay, learning_rate_steps) should be set'
 
         self.optimizer = kwargs.get('optimizer', 'adam')
         self.n_epochs = kwargs.get('n_epochs', 50)
         self.epoch_size = kwargs.get('epoch_size', None) # in steps
         self.save_interval = kwargs.get('save_interval', 1e3)
 
-        # Shape of the image to be processed. The original with either be resized or pad depending on its original size
+        # Shape of the image to be processed. The original with either be
+        # resized or pad depending on its original size
         self.input_shape = kwargs.get('input_shape', (32, 100))
-        # Either decode with the same alphabet or map capitals and lowercase letters to the same symbol (lowercase)
+        # Either decode with the same alphabet or map capitals and lowercase
+        # letters to the same symbol (lowercase)
         self.alphabet_decoding = kwargs.get('alphabet_decoding', 'same')
-        self.gpu = kwargs.get('gpu', '')
         # Alphabet to use (from class Alphabet)
         self.alphabet = kwargs.get('alphabet')
 
-        # self.csv_delimiter = kwargs.get('csv_delimiter', ';')
-
-        # self.csv_files_train = kwargs.get('csv_files_train')
-        # if kwargs.get('glob_files_train'):
-        #     self.csv_files_train = self.expand_files(self.csv_files_train, kwargs['glob_files_train'])
-
-        # self.csv_files_eval = kwargs.get('csv_files_eval')
-        # if kwargs.get('glob_files_eval'):
-        #     self.csv_files_eval = self.expand_files(self.csv_files_eval, kwargs['glob_files_eval'])
+        self.gpu = kwargs.get('gpu', '')
 
         self.output_model_dir = kwargs.get('output_model_dir')
         self.num_corpora = kwargs.get('num_corpora', 0)
-        self._keep_prob_dropout = kwargs.get('keep_prob')
-        self.learning_rate_decay = kwargs.get('learning_rate_decay')
-        self.learning_rate_steps = kwargs.get('learning_rate_steps')
+        self._keep_prob_dropout = kwargs.get('keep_prob', 1)
 
         self.tfrecords_train = kwargs.get('tfrecords_train')
         self.tfrecords_eval = kwargs.get('tfrecords_eval')
@@ -124,14 +116,6 @@ class Params:
 
         self._assign_alphabet(alphabet_decoding_list=Alphabet.DecodingList)
 
-    def expand_files(self, dirs, pattern):
-        files = []
-        for directory in dirs:
-            search_pattern = os.path.join(directory, pattern)
-            files_found = glob(search_pattern)
-            assert len(files_found) > 0, 'No files found for ' + search_pattern
-            files += files_found
-        return files
 
     def export_experiment_params(self):
         if not os.path.isdir(self.output_model_dir):

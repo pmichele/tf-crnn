@@ -4,7 +4,7 @@ __author__ = 'solivr'
 
 import tensorflow as tf
 from tensorflow.contrib.rnn import BasicLSTMCell, LSTMCell
-from tensorflow.contrib.cudnn_rnn import CudnnLSTM 
+from tensorflow.contrib.cudnn_rnn import CudnnLSTM
 from .decoding import get_words_from_chars
 from .config import  Params, CONST
 
@@ -170,7 +170,7 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
     with tf.name_scope('corpus_concat'):
         corpora = tf.expand_dims(corpora, axis=1) # add the time dimension
         corpora = tf.one_hot(corpora, depth=params.num_corpora, dtype=inputs.dtype, name='corpus_to_onehot')
-        multiples = tf.stack([1, tf.shape(inputs)[1], 1])     #tf.shape(input)[1] = width 
+        multiples = tf.stack([1, tf.shape(inputs)[1], 1])     #tf.shape(input)[1] = width
 
         print("multiples", multiples.get_shape().as_list())
         corpora = tf.tile(corpora, multiples)
@@ -200,7 +200,7 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
             rnn_reshaped = tf.reshape(lstm_net, [-1, shape[-1]])  # [batch x width, 2*n_hidden]
 
         with tf.variable_scope('fully_connected'):
-            W = weightVar([list_n_hidden[-1]*2, params.n_classes]) 
+            W = weightVar([list_n_hidden[-1]*2, params.n_classes])
             b = biasVar([params.n_classes])
             fc_out = tf.nn.bias_add(tf.matmul(rnn_reshaped, W), b)
 
@@ -254,7 +254,7 @@ def crnn_fn(features, labels, mode, params):
 
     # Compute seq_len from image width
     n_pools = CONST.DIMENSION_REDUCTION_W_POOLING  # 2x2 pooling in dimension W on layer 1 and 2
-    seq_len_inputs = tf.divide(features['images_widths'], n_pools, name='seq_len_input_op') - 1     
+    seq_len_inputs = tf.divide(features['images_widths'], n_pools, name='seq_len_input_op') - 1
 
     predictions_dict = {'prob': logprob,
                         'raw_predictions': raw_pred,
@@ -285,7 +285,7 @@ def crnn_fn(features, labels, mode, params):
         # Loss
         # ----
         # >>> Cannot have longer labels than predictions -> error
-        
+
         with tf.control_dependencies([tf.less_equal(sparse_code_target.dense_shape[1], tf.reduce_max(tf.cast(seq_len_inputs, tf.int64)))]):
             loss_ctc = tf.nn.ctc_loss(labels=sparse_code_target,
                                       inputs=predictions_dict['prob'],
@@ -297,25 +297,29 @@ def crnn_fn(features, labels, mode, params):
             loss_ctc = tf.reduce_mean(loss_ctc)
             loss_ctc = tf.Print(loss_ctc, [loss_ctc], message='* Loss : ')
 
-    
+
         global_step = tf.train.get_or_create_global_step()
         # # Create an ExponentialMovingAverage object
         ema = tf.train.ExponentialMovingAverage(decay=0.99, num_updates=global_step, zero_debias=True)
         # Create the shadow variables, and add op to maintain moving averages
         maintain_averages_op = ema.apply([loss_ctc])
         loss_ema = ema.average(loss_ctc)
-           
+
 
         # Train op
         # --------
-        #learning_rate = tf.constant(parameters.learning_rate)
+        if parameters.learning_rate_decay:
+            learning_rate = tf.train.exponential_decay(parameters.learning_rate, global_step,
+                                                       parameters.learning_rate_steps,
+                                                       parameters.learning_rate_decay, staircase = True)
+        else:
+            learning_rate = tf.constant(parameters.learning_rate)
 
-        learning_rate = tf.train.exponential_decay(parameters.learning_rate, global_step, parameters.learning_rate_steps, parameters.learning_rate_decay, staircase = True)
-        
+
         if parameters.optimizer == 'ada':
             optimizer = tf.train.AdadeltaOptimizer(learning_rate)
         elif parameters.optimizer == 'adam':
-            optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5, epsilon=1e-07) # at 1e-08 sometimes exploding gradient 
+            optimizer = tf.train.AdamOptimizer(learning_rate, beta1=0.5, epsilon=1e-07) # at 1e-08 sometimes exploding gradient
         elif parameters.optimizer == 'rms':
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
 
