@@ -172,12 +172,8 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
         corpora = tf.one_hot(corpora, depth=params.num_corpora, dtype=inputs.dtype, name='corpus_to_onehot')
         multiples = tf.stack([1, tf.shape(inputs)[1], 1])     #tf.shape(input)[1] = width
 
-        print("multiples", multiples.get_shape().as_list())
         corpora = tf.tile(corpora, multiples)
-        print("corpora", corpora.get_shape().as_list())
         inputs = tf.concat((corpora, inputs), axis=2, name='concat_corpus')
-
-        print("lstm inputs after concat", inputs.get_shape().as_list())
 
     with tf.name_scope('deep_bidirectional_lstm'):
         # Forward direction cells
@@ -225,9 +221,8 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
 def crnn_fn(features, labels, mode, params):
     """
     :param features: dict {
-                            'images'
-                            'images_widths'
-                            'filenames'
+                            'image'
+                            'images_width'
                             'corpora'
                             }
     :param labels: labels. flattend (1D) array with encoded label (one code per character)
@@ -244,17 +239,14 @@ def crnn_fn(features, labels, mode, params):
     if mode != tf.estimator.ModeKeys.TRAIN:
         parameters.keep_prob_dropout = 1.0
 
-    conv = deep_cnn(features['images'], (mode == tf.estimator.ModeKeys.TRAIN), summaries=False)
+    conv = deep_cnn(features['image'], (mode == tf.estimator.ModeKeys.TRAIN), summaries=False)
 
 
-    logprob, raw_pred = deep_bidirectional_lstm(conv, features['corpora'], params=parameters, summaries=False)
-
-    print("logprob",logprob.get_shape().as_list())
-    print("raw_pred",raw_pred.get_shape().as_list())
+    logprob, raw_pred = deep_bidirectional_lstm(conv, features['corpus'], params=parameters, summaries=False)
 
     # Compute seq_len from image width
     n_pools = CONST.DIMENSION_REDUCTION_W_POOLING  # 2x2 pooling in dimension W on layer 1 and 2
-    seq_len_inputs = tf.divide(features['images_widths'], n_pools, name='seq_len_input_op') - 1
+    seq_len_inputs = tf.divide(features['image_width'], n_pools, name='seq_len_input_op') - 1
 
     predictions_dict = {'prob': logprob,
                         'raw_predictions': raw_pred,
@@ -325,10 +317,9 @@ def crnn_fn(features, labels, mode, params):
 
         if not parameters.train_cnn:
             trainable = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, 'deep_bidirectional_lstm')
-            print('not cnnnnn')
+            print('Training LSTM only')
         else:
             trainable = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-            print('cnnnnn')
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         opt_op = optimizer.minimize(loss_ctc, global_step=global_step, var_list=trainable)

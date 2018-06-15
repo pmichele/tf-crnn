@@ -7,14 +7,12 @@ try:
     import better_exceptions
 except ImportError:
     pass
-from tqdm import trange
 import tensorflow as tf
 from src.model import crnn_fn
-from src.data_handler import data_loader
+from src.data_handler import make_input_fn
 from src.data_handler import preprocess_image_for_prediction
-from glob import glob
 
-from src.config import Params, Alphabet, import_params_from_json
+from src.config import Params, import_params_from_json
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train the model according to the specified config in the JSON. '
@@ -59,27 +57,19 @@ if __name__ == '__main__':
                                        config=est_config
                                        )
 
-    record_iterator = tf.python_io.tf_record_iterator(path=parameters.tfrecords_eval)
-    for n_samples_eval,string_record in enumerate(record_iterator):
-        pass
-    n_samples_eval += 1
-
-    print("n_samples_eval", n_samples_eval)
-
     try:
-        for e in trange(0, parameters.n_epochs):
-            estimator.train(input_fn=data_loader(tfrecords_filename=glob(parameters.tfrecords_train),
-                                                 params=parameters,
-                                                 batch_size=parameters.train_batch_size,
-                                                 num_epochs=1,
-                                                 data_augmentation=True,
-                                                 image_summaries=True))
+        for e in range(0, parameters.n_epochs):
+            estimator.train(input_fn=make_input_fn(parameters.tfrecords_train,
+                                                   parameters.train_batch_size,
+                                                   parameters.input_shape,
+                                                   repeat=False),
+
+                            )
             print('Train done')
-            estimator.evaluate(input_fn=data_loader(tfrecords_filename=glob(parameters.tfrecords_eval),
-                                                    params=parameters,
-                                                    batch_size=parameters.eval_batch_size,
-                                                    num_epochs=1),
-                               steps=max(n_samples_eval // parameters.eval_batch_size, 1) # minimum 1 in case n_samples eval < 512
+            estimator.evaluate(input_fn=make_input_fn(parameters.tfrecords_eval,
+                                                      parameters.eval_batch_size,
+                                                      parameters.input_shape,
+                                                      repeat=False)
                                )
             print('Eval done')
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-__author__ = 'solivr'
+__author__ = 'cipri-tom'
 
 import tensorflow as tf
 import numpy as np
@@ -8,98 +8,50 @@ from .config import Params, CONST
 from typing import Tuple
 import time
 
-def data_loader(tfrecords_filename: str, params: Params, batch_size: int=128, data_augmentation: bool=False,
-                num_epochs: int=None, image_summaries: bool=False):
+from functools import partial
+
+feature_spec = {
+    'image_raw': tf.FixedLenFeature([], tf.string),
+    'label': tf.FixedLenFeature([], tf.string),
+    'corpus': tf.FixedLenFeature([],tf.int64)
+}
+def parse_example(serialized_example, output_shape=None):
+    features = tf.parse_single_example(serialized_example, feature_spec)
+    # Important step: remove "label" from features!
+    # Otherwise our classifier would simply learn to predict
+    # label=features['label']...
+    label = features.pop('label')
+
+    # Replace image_raw with the decoded & preprocessed version
+    image = features.pop('image_raw')
+    image = tf.image.decode_png(image, channels=1)
+    image = augment_data(image)
+    image, orig_width = padding_inputs_width(image, output_shape, increment=CONST.DIMENSION_REDUCTION_W_POOLING)
+    features['image'] = image
+    features['image_width'] = orig_width
+    return features, label
+
+
+def make_input_fn(files_pattern, batch_size, output_shape, repeat=True):
+    shaped_parse_example = partial(parse_example, output_shape=output_shape)
 
     def input_fn():
+        files = tf.data.Dataset.list_files(files_pattern, shuffle=True)
+        ds = files.apply(tf.contrib.data.parallel_interleave(
+            tf.data.TFRecordDataset,
+            cycle_length=4, block_length=16, sloppy=True))
 
-        start_time = time.time()
-        filename_queue = tf.train.string_input_producer(tfrecords_filename, num_epochs=num_epochs, name='filename_queue')
-
-        # Skip lines that have already been processed
-        #reader = tf.TextLineReader(name='CSV_Reader', skip_header_lines=0)
-
-        reader = tf.TFRecordReader()
-
-        _,value = reader.read(filename_queue, name='file_reading_op')
-
-        #default_line = [['None'], ['None'], [-1]]
-
-        features = tf.parse_single_example(
-            value,
-            features={
-                'image_raw': tf.FixedLenFeature([], tf.string),
-                'label': tf.FixedLenFeature([], tf.string),
-                'corpus': tf.FixedLenFeature([],tf.int64)
-                })
-
-
-        #height = tf.cast(features['height'], tf.int32)
-        #width = tf.cast(features['width'], tf.int32)
-        image = tf.image.decode_png(features['image_raw'], channels=1)
-        label = features['label']
-        corpus = tf.cast(features['corpus'],tf.int32)
-
-
-        # path, label, corpus = tf.decode_csv(value, record_defaults=default_line, field_delim=params.csv_delimiter,
-        #                                     name='csv_reading_op')
-
-        image, img_width = image_reading(image, resized_size=params.input_shape,
-                                         data_augmentation=data_augmentation, padding=True)
-
-        to_batch = { 'images': image, 'images_widths': img_width,
-                     'labels': label, 'corpora': corpus
-        }
-
-        prepared_batch = tf.train.shuffle_batch(to_batch,
-                                                batch_size=batch_size,
-                                                min_after_dequeue=1024,
-                                                num_threads=8, capacity=2048,
-                                                allow_smaller_final_batch=False,
-                                                name='prepared_batch_queue')
-
-        print("batch before distortion",(prepared_batch['images']))
-
-        # start_time_2 = time.time()
-        # print("Time for preparing the batch without distortion {} sec".format(start_time_2 - start_time))
-        # prepared_batch['images'] = tf_distortion_maps(prepared_batch.get('images'),batch_size)
-        # print("Time after distortion {} sec".format(time.time()-start_time))
-
-        #print("batch after distortion",(prepared_batch['images']))
-
-        if image_summaries:
-
-            tf.summary.image('input/image', prepared_batch.get('images'), max_outputs=10)
-            tf.summary.text('input/labels', prepared_batch.get('labels')[:10])
-            tf.summary.text('input/widths', tf.as_string(prepared_batch.get('images_widths')))
-
-        return prepared_batch, prepared_batch.get('labels')
+        # NOTE: using map_and_batch seems to decrease performance
+        ds = (ds.shuffle(buffer_size=128) # small buffer since files were also shuffled
+                .map(shaped_parse_example, num_parallel_calls=4)
+                .apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
+              )
+        if repeat:
+            ds = ds.repeat() # repeat indefinitely, and pass max_steps to the trainer
+        features, labels = ds.prefetch(2).make_one_shot_iterator().get_next()
+        return features, labels
 
     return input_fn
-
-
-def image_reading(image: tf.Tensor, resized_size: Tuple[int, int]=None, data_augmentation: bool=False,
-                  padding: bool=False) -> Tuple[tf.Tensor, tf.Tensor]:
-
-    # Data augmentation
-    if data_augmentation:
-        image = augment_data(image)
-
-    # Padding
-    if padding:
-        with tf.name_scope('padding'):
-            image, img_width = padding_inputs_width(image, resized_size, increment=CONST.DIMENSION_REDUCTION_W_POOLING)
-    # Resize
-    else:
-        image = tf.image.resize_images(image, size=resized_size)
-        img_width = tf.shape(image)[1]
-
-    # threshold -- image is already float32 due to resize
-    mean_val = tf.reduce_mean(image)
-    image = 255 * tf.cast(image > mean_val, tf.float32)
-
-    with tf.control_dependencies([tf.assert_equal(image.shape[:2], resized_size)]):
-        return image, img_width
 
 
 def random_rotation(img: tf.Tensor, max_rotation: float=0.1, crop: bool=True) -> tf.Tensor:  # from SeguinBe
@@ -258,9 +210,9 @@ def preprocess_image_for_prediction(fixed_height: int=32, min_width: int=8):
                                 )
 
         # Features to serve (to send to the model)
-        features = {'images': resized_image[None],  # cast to 1 x h x w x c
-                    'images_widths': new_width[None],  # cast to tensor
-                    'corpora': corpus,
+        features = {'image': resized_image[None],  # cast to 1 x h x w x c
+                    'image_width': new_width[None],  # cast to tensor
+                    'corpus': corpus,
                     }
 
         # Inputs received
