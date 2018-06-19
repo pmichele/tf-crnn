@@ -195,3 +195,9 @@ def tf_distortion_maps(img: tf.Tensor, batch_size: int = 128) -> tf.Tensor:
 
 
     return img
+
+def normalize_text(text):
+    """Remove accents and other stuff from text"""
+    return ''.join((c for c in unicodedata.normalize('NFD', text) \
+                    if unicodedata.category(c) != 'Mn'))
+

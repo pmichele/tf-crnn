@@ -14,8 +14,8 @@ class CONST:
 class Alphabet:
     DiacriticalLower = 'çéèàùêâôûîëï' # 12 these were found in the training set
     DiacriticalUpper = 'È'            # 1
-    LettersLowercase = 'abcdefghijklmnopqrstuvwxyz' + DiacriticalLower  # 26 + 12
-    LettersCapitals  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + DiacriticalUpper  # 26 + 1
+    LettersLowercase = 'abcdefghijklmnopqrstuvwxyz'  # 26 + 12
+    LettersCapitals  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'  # 26 + 1
     Digits = '0123456789'    # 10
     Symbols = " '.,-/_"               #old: " '.,:-()/*°"  # 11
     DecodingList = ['same', 'lowercase']

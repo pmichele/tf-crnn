@@ -77,7 +77,6 @@ if __name__ == '__main__':
             estimator.export_savedmodel(os.path.join(parameters.output_model_dir, 'export'),
                                 preprocess_image_for_prediction(fixed_height=parameters.input_shape[0], min_width=10))
 
-
     except KeyboardInterrupt:
         print('Interrupted')
 
