@@ -1,0 +1,14 @@
+trainingInput:
+    scaleTier: CUSTOM
+    masterType: standard_p100
+
+    pythonVersion: '3.5'
+    runtimeVersion: '1.8'
+    region: 'europe-west1'
+    pythonModule: 'tf_crnn.task'
+    jobDir: 'gs://hwr-data/models/hwr_p100/'
+
+    args:
+      - '--learning-rate=0.001'
+      - '--learning-rate-decay=0.95'
+      - '--learning-rate-steps=5000'
