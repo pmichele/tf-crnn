@@ -208,8 +208,7 @@ def import_params_from_json(model_directory: str=None, json_filename: str=None) 
             raise FileNotFoundError
     else:
         if not os.path.isfile(json_filename):
-            print('No json found with filename {}'.format(json_filename))
-            raise FileNotFoundError
+            raise FileNotFoundError('No json found with filename {}'.format(json_filename))
 
     print('Importing parameters from', json_filename)
     with open(json_filename, 'r', encoding='utf8') as data_json:

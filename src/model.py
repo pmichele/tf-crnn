@@ -274,10 +274,10 @@ def crnn_fn(features, labels, mode, params):
         seq_lengths_labels = tf.bincount(tf.cast(sparse_code_target.indices[:, 0], tf.int32),
                                          minlength=tf.shape(predictions_dict['prob'])[1])
 
+        global_step = tf.train.get_or_create_global_step()
         # Loss
         # ----
         # >>> Cannot have longer labels than predictions -> error
-
         with tf.control_dependencies([tf.less_equal(sparse_code_target.dense_shape[1], tf.reduce_max(tf.cast(seq_len_inputs, tf.int64)))]):
             loss_ctc = tf.nn.ctc_loss(labels=sparse_code_target,
                                       inputs=predictions_dict['prob'],
@@ -287,10 +287,9 @@ def crnn_fn(features, labels, mode, params):
                                       ignore_longer_outputs_than_inputs=True,  # returns zero gradient in case it happens -> ema loss = NaN
                                       time_major=True)
             loss_ctc = tf.reduce_mean(loss_ctc)
-            loss_ctc = tf.Print(loss_ctc, [loss_ctc], message='* Loss : ')
+            loss_ctc = tf.Print(loss_ctc, [global_step, loss_ctc], message='* Loss : ')
 
 
-        global_step = tf.train.get_or_create_global_step()
         # # Create an ExponentialMovingAverage object
         ema = tf.train.ExponentialMovingAverage(decay=0.99, num_updates=global_step, zero_debias=True)
         # Create the shadow variables, and add op to maintain moving averages

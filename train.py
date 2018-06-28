@@ -2,7 +2,6 @@
 __author__ = 'solivr'
 import argparse
 import os
-import numpy as np
 try:
     import better_exceptions
 except ImportError:

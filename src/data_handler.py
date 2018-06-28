@@ -3,7 +3,7 @@ __author__ = 'cipri-tom'
 
 import tensorflow as tf
 import numpy as np
-from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_distortion_maps
+from .elastic_helpers import tf_distortion_maps
 from .config import Params, CONST
 from typing import Tuple
 import time
@@ -43,8 +43,12 @@ def make_input_fn(files_pattern, batch_size, output_shape, repeat=True):
 
         # NOTE: using map_and_batch seems to decrease performance
         ds = (ds.shuffle(buffer_size=128) # small buffer since files were also shuffled
-                .map(shaped_parse_example, num_parallel_calls=4)
-                .apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
+                # .map(shaped_parse_example, num_parallel_calls=4)
+                # .apply(tf.contrib.data.batch_and_drop_remainder(batch_size))
+
+                .apply(tf.contrib.data.map_and_batch(
+                    shaped_parse_example, batch_size,
+                    num_parallel_batches=1, drop_remainder=True))
               )
         if repeat:
             ds = ds.repeat() # repeat indefinitely, and pass max_steps to the trainer
