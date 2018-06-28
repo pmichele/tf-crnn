@@ -51,6 +51,7 @@ def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> 
                 bias = [var for var in tf.global_variables() if var.name == 'deep_cnn/layer1/bias:0'][0]
                 tf.summary.histogram('bias', bias)
 
+
         # - conv2 - maxPool 2x2
         with tf.variable_scope('layer2'):
             W = weightVar([3, 3, 64, 128])
@@ -249,12 +250,8 @@ def crnn_fn(features, labels, mode, params):
     seq_len_inputs = tf.divide(features['image_width'], n_pools, name='seq_len_input_op') - 1
 
     predictions_dict = {'prob': logprob,
-                        'raw_predictions': raw_pred,
+                        'raw_predictions': raw_pred
                         }
-    try:
-        predictions_dict['filenames'] = features['filenames']
-    except KeyError:
-        pass
 
     if not mode == tf.estimator.ModeKeys.PREDICT:
         # Alphabet and codes
@@ -271,8 +268,8 @@ def crnn_fn(features, labels, mode, params):
             codes = tf.cast(codes, tf.int32)
             sparse_code_target = tf.SparseTensor(splitted.indices, codes, splitted.dense_shape)
 
-        seq_lengths_labels = tf.bincount(tf.cast(sparse_code_target.indices[:, 0], tf.int32),
-                                         minlength=tf.shape(predictions_dict['prob'])[1])
+        seq_lengths_labels = tf.bincount(tf.cast(sparse_code_target.indices[:, 0], tf.int32), #array of labels length
+                                         minlength= tf.shape(predictions_dict['prob'])[1])
 
         # Loss
         # ----
@@ -303,7 +300,7 @@ def crnn_fn(features, labels, mode, params):
         if parameters.learning_rate_decay:
             learning_rate = tf.train.exponential_decay(parameters.learning_rate, global_step,
                                                        parameters.learning_rate_steps,
-                                                       parameters.learning_rate_decay, staircase = True)
+                                                       parameters.learning_rate_decay, staircase=True)
         else:
             learning_rate = tf.constant(parameters.learning_rate)
 
@@ -344,30 +341,33 @@ def crnn_fn(features, labels, mode, params):
                                                                               sequence_length=tf.cast(seq_len_inputs, tf.int32),
                                                                               merge_repeated=False,
                                                                               beam_width=100,
-                                                                              top_paths=2)
+                                                                              top_paths=parameters.top_paths)
             # Score
-            predictions_dict['score'] = tf.subtract(log_probability[:, 0], log_probability[:, 1])
+            predictions_dict['score'] = log_probability
             # around 10.0 -> seems pretty sure, less than 5.0 bit unsure, some errors/challenging images
-            sparse_code_pred = sparse_code_pred[0]
 
-            sequence_lengths_pred = tf.bincount(tf.cast(sparse_code_pred.indices[:, 0], tf.int32),
-                                                minlength=tf.shape(predictions_dict['prob'])[1])
+            sequence_lengths_pred = [tf.bincount(tf.cast(sparse_code_pred[i].indices[:, 0], tf.int32),
+                                                minlength=tf.shape(predictions_dict['prob'])[1]) for i in range(parameters.top_paths)]
 
-            pred_chars = table_int2str.lookup(sparse_code_pred)
-            predictions_dict['words'] = get_words_from_chars(pred_chars.values, sequence_lengths=sequence_lengths_pred)
+            pred_chars = [table_int2str.lookup(sparse_code_pred[i]) for i in range(parameters.top_paths)]
 
-            tf.summary.text('predicted_words', predictions_dict['words'][:10])
+            list_preds = [get_words_from_chars(pred_chars[i].values, sequence_lengths=sequence_lengths_pred[i])
+                          for i in range(parameters.top_paths)]
+
+            predictions_dict['words'] = tf.stack(list_preds)
+
+            tf.summary.text('predicted_words', predictions_dict['words'][0][:10])
 
     # Evaluation ops
     # --------------
     if mode == tf.estimator.ModeKeys.EVAL:
         with tf.name_scope('evaluation'):
-            CER = tf.metrics.mean(tf.edit_distance(sparse_code_pred, tf.cast(sparse_code_target, dtype=tf.int64)), name='CER')
+            CER = tf.metrics.mean(tf.edit_distance(sparse_code_pred[0], tf.cast(sparse_code_target, dtype=tf.int64)), name='CER')
 
             # Convert label codes to decoding alphabet to compare predicted and groundtrouth words
             target_chars = table_int2str.lookup(tf.cast(sparse_code_target, tf.int64))
             target_words = get_words_from_chars(target_chars.values, seq_lengths_labels)
-            accuracy = tf.metrics.accuracy(target_words, predictions_dict['words'], name='accuracy')
+            accuracy = tf.metrics.accuracy(target_words, predictions_dict['words'][0], name='accuracy')
 
             eval_metric_ops = {
                                'eval/accuracy': accuracy,
