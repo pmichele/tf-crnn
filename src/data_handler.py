@@ -3,7 +3,7 @@ __author__ = 'cipri-tom'
 
 import tensorflow as tf
 import numpy as np
-from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_distortion_maps
+from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_distortion_maps, normalize_text
 from .config import Params, CONST
 from typing import Tuple
 import time
@@ -29,10 +29,11 @@ def parse_example(serialized_example, output_shape=None):
     image, orig_width = padding_inputs_width(image, output_shape, increment=CONST.DIMENSION_REDUCTION_W_POOLING)
     features['image'] = image
     features['image_width'] = orig_width
+
     return features, label
 
 
-def make_input_fn(files_pattern, batch_size, output_shape, repeat=True):
+def make_input_fn(files_pattern, batch_size, output_shape, dynamic_distortion=False, repeat=True):
     shaped_parse_example = partial(parse_example, output_shape=output_shape)
 
     def input_fn():
@@ -49,6 +50,14 @@ def make_input_fn(files_pattern, batch_size, output_shape, repeat=True):
         if repeat:
             ds = ds.repeat() # repeat indefinitely, and pass max_steps to the trainer
         features, labels = ds.prefetch(2).make_one_shot_iterator().get_next()
+
+        if dynamic_distortion:
+            features['image'] = tf_distortion_maps(features.get('image'), batch_size)
+
+        tf.summary.image('input/image', features.get('image'), max_outputs=10)
+        tf.summary.text('input/labels', labels[:10])
+        tf.summary.text('input/widths', tf.as_string(features.get('image_width')))
+
         return features, labels
 
     return input_fn
