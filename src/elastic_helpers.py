@@ -15,15 +15,16 @@ def sample(img, coords):
     #assert None not in shape2, coords.get_shape()
     max_coor = tf.cast(tf.stack([ shape[0] - 1, shape[1] - 1]),tf.float32)
 
-    coords = tf.clip_by_value(coords, 0., max_coor)  # borderMode==repeat
+    coords = tf.clip_by_value(coords, 0., tf.cast(shape[1] - 1, tf.float32))  # borderMode==repeat
     coords = tf.to_int32(coords)
 
     batch_index = tf.range(batch, dtype=tf.int32)
     batch_index = tf.reshape(batch_index, [-1, 1, 1, 1])
     batch_index = tf.tile(batch_index, [1, shape2[0], shape2[1], 1])    # bxh2xw2x1
     indices = tf.concat([batch_index, coords], axis=3) # bxh2xw2x3
+    print("indices",indices)
     sampled = tf.gather_nd(img, indices)
-
+    print("sampled",sampled)
     return tf.cast(sampled,tf.float32)
 
 def ImageSample(inputs, borderMode='repeat'):
@@ -191,8 +192,7 @@ def tf_distortion_maps(img: tf.Tensor, batch_size: int = 128) -> tf.Tensor:
         #img = tf.expand_dims(img, axis=0)   #The image is dimension 3 (grayscale) so we add 1 dimension
 
     img = ImageSample((img,coords))
-    #print("elstic image shape", tf.shape(img.eval()))
-
+    print("dynamic image shape", img.get_shape().as_list())
 
     return img
 

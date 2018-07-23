@@ -341,10 +341,10 @@ def crnn_fn(features, labels, mode, params):
                                                                               sequence_length=tf.cast(seq_len_inputs, tf.int32),
                                                                               merge_repeated=False,
                                                                               beam_width=100,
-                                                                              top_paths=parameters.top_paths)
-            # Score
+                                                                              top_paths=parameters.nb_logprob)
+            # confidence value
+
             predictions_dict['score'] = log_probability
-            # around 10.0 -> seems pretty sure, less than 5.0 bit unsure, some errors/challenging images
 
             sequence_lengths_pred = [tf.bincount(tf.cast(sparse_code_pred[i].indices[:, 0], tf.int32),
                                                 minlength=tf.shape(predictions_dict['prob'])[1]) for i in range(parameters.top_paths)]

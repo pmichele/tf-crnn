@@ -112,6 +112,8 @@ class Params:
         self.tfrecords_eval = kwargs.get('tfrecords_eval')
         self.train_cnn = kwargs.get('train_cnn')
         self.top_paths = kwargs.get('top_paths')
+        self.nb_logprob = kwargs.get('nb_logprob')
+        self.dynamic_distortion = kwargs.get('dynamic_distortion')
 
         assert self.optimizer in ['adam', 'rms', 'ada'], 'Unknown optimizer {}'.format(self.optimizer)
 
