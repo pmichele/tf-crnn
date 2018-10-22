@@ -12,14 +12,14 @@
   "train_batch_size": 512,
   "input_shape": [ 32, 256 ],
   "num_corpora": 10,
-  "output_model_dir": "/mnt/nfs/data/paul/generative/2M_dilgrad_dynamic_2018_07_05/",
+  "output_model_dir": "/tmp/test_train",
   "csv_delimiter": "\t",
-  "tfrecords_train": "/notebooks/tfrecords_data/2M_dilgrad_dynamic/train/*",
-  "tfrecords_eval": "/notebooks/tfrecords_data/test_set/constat_pred_100_10_types_latin1_noaccent_byreport.tfrecords",
+  "tfrecords_train": "/home/ciprian/hwr/tfrecords_data/2M_noise/*",
+  "tfrecords_eval": "/home/ciprian/hwr/tfrecords_data/test/constat_pred_100_10_types_latin1_noaccent_byreport.tfrecords",
   "alphabet": "letters_digits_extended",
   "alphabet_decoding": "same",
   "train_cnn": 1,
   "top_paths": 3,
   "nb_logprob": 20,
-  "dynamic_distortion": 1
+  "dynamic_distortion": false
 }
