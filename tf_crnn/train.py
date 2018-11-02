@@ -36,7 +36,7 @@ if __name__ == '__main__':
     # including the overriding command line arguments
     parameters.export_experiment_params()
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = parameters.gpu
+    # os.environ['CUDA_VISIBLE_DEVICES'] = parameters.gpu
     config_sess = tf.ConfigProto()
     config_sess.gpu_options.allow_growth = True
 

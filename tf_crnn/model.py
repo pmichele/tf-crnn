@@ -149,10 +149,13 @@ def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> 
                 tf.summary.histogram('bias', bias)
 
         cnn_net = conv7
+        print("FMap", cnn_net.get_shape().as_list())
+        box = [16.0 / 64.0, 0.0, 48.0 / 64.0, 1.0]
+        print("box is", box)
 
         # Experiment with crop and resize
         batch_size = tf.shape(cnn_net)[0]
-        crop_boxes = tf.tile(tf.expand_dims([0.25, 0.0, 0.75, 1.0], axis=0), [batch_size, 1])
+        crop_boxes = tf.tile(tf.expand_dims(box, axis=0), [batch_size, 1])
         box_indices = tf.range(batch_size)
         crop_size = (1, 63)
         resized_cnn = tf.image.crop_and_resize(cnn_net, crop_boxes, box_indices, crop_size)
