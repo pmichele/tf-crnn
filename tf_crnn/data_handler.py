@@ -3,7 +3,7 @@ __author__ = 'cipri-tom'
 
 import tensorflow as tf
 import numpy as np
-from src.elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_distortion_maps, normalize_text
+from .elastic_helpers import gaussian_filter_tf, sample, ImageSample, tf_distortion_maps, normalize_text
 from .config import Params, CONST
 from typing import Tuple
 import time
