@@ -29,8 +29,36 @@ def parse_example(serialized_example, output_shape=None):
     image, orig_width = padding_inputs_width(image, output_shape, increment=CONST.DIMENSION_REDUCTION_W_POOLING)
 
     # Modify data to experiment with crop and resize
-    upper_half = image[0:16, :, :]
-    lower_half = image[16:32, :, :]
+
+    # Experiment 1 mirror -- no difference
+    # upper_half = image[0:16, :, :]
+    # lower_half = image[16:32, :, :]
+
+    # Experiment 2 car_noisy
+    # noise_shape = [16] + image.get_shape().as_list()[1:]
+    # upper_half, lower_half = [255 * tf.random_normal(shape=noise_shape, dtype=tf.float32) for i in range(2)]
+
+    # # Experiment 3 mirror_and_noise
+    # upper_half = 255 - image[0:16, :, :]
+    # lower_half = 255 - image[16:32, :, :]
+    # noise_shape = [16] + image.get_shape().as_list()[1:]
+    # noise_up, noise_down = [255 - 255 * tf.random_normal(shape=noise_shape, dtype=tf.float32) for i in range(2)]
+    # upper_half += noise_up
+    # lower_half += noise_down
+    # upper_half, lower_half = 255 - upper_half, 255 - lower_half
+
+    # Experiment 4 white background
+    # white_shape = [16] + image.get_shape().as_list()[1:]
+    # upper_half, lower_half = [tf.fill(white_shape, 255.0) for i in range(2)]
+
+    # Experiment 5 bigger pad
+    # noise_shape = [16] + image.get_shape().as_list()[1:]
+    # upper_half, lower_half = [255 * tf.random_normal(shape=noise_shape, dtype=tf.float32) for i in range(2)]
+
+    # Experiment 6 8-pad with mirror
+    upper_half = image[0:8, :, :]
+    lower_half = image[24:32, :, :]
+
     padded_image = tf.concat([lower_half, image, upper_half], axis=0)
 
     features['image'] = padded_image
