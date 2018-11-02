@@ -47,7 +47,7 @@ if __name__ == '__main__':
         save_checkpoints_steps=parameters.save_interval,
         session_config=config_sess,
         save_checkpoints_secs=None,
-        save_summary_steps=2000,
+        save_summary_steps=100,
         model_dir=parameters.output_model_dir
     )
 
