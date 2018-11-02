@@ -17,7 +17,7 @@ class Alphabet:
     LettersLowercase = 'abcdefghijklmnopqrstuvwxyz'  # 26 + 12
     LettersCapitals  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'  # 26 + 1
     Digits = '0123456789'    # 10
-    Symbols = " '.,-/_"               #old: " '.,:-()/*°"  # 11
+    Symbols = " '.,-/_:"               #old: " '.,:-()/*°"  # 11
     DecodingList = ['same', 'lowercase']
 
     BLANK_SYMBOL = '$'
@@ -28,7 +28,7 @@ class Alphabet:
     LETTERS_ONLY_LOWERCASE = LettersLowercase + BLANK_SYMBOL
     LETTERS_EXTENDED = LettersCapitals + LettersLowercase + Symbols + BLANK_SYMBOL
     LETTERS_EXTENDED_LOWERCASE = LettersLowercase + Symbols + BLANK_SYMBOL
-    LETTERS_DIGITS_EXTENDED = Digits + LettersCapitals + LettersLowercase + Symbols + BLANK_SYMBOL
+    LETTERS_DIGITS_EXTENDED = Digits + LettersCapitals + LettersLowercase + Symbols + BLANK_SYMBOL + DiacriticalLower
     LETTERS_DIGITS_EXTENDED_LOWERCASE = Digits + LettersLowercase + Symbols + BLANK_SYMBOL
     # TODO : Maybe add a unique code (unicode?) to each character and add mask
 
