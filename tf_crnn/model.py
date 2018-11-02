@@ -150,9 +150,16 @@ def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> 
 
         cnn_net = conv7
 
+        # Experiment with crop and resize
+        batch_size = tf.shape(cnn_net)[0]
+        crop_boxes = tf.tile(tf.expand_dims([0.25, 0.0, 0.75, 1.0], axis=0), [batch_size, 1])
+        box_indices = tf.range(batch_size)
+        crop_size = (1, 63)
+        resized_cnn = tf.image.crop_and_resize(cnn_net, crop_boxes, box_indices, crop_size)
+
         with tf.variable_scope('Reshaping_cnn'):
-            shape = cnn_net.get_shape().as_list()  # [batch, height, width, features]
-            transposed = tf.transpose(cnn_net, perm=[0, 2, 1, 3],
+            shape = resized_cnn.get_shape().as_list()  # [batch, height, width, features]
+            transposed = tf.transpose(resized_cnn, perm=[0, 2, 1, 3],
                                       name='transposed')  # [batch, width, height, features]
             conv_reshaped = tf.reshape(transposed, [shape[0], -1, shape[1] * shape[3]],
                                        name='reshaped')  # [batch, width, height x features]

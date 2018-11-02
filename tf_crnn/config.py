@@ -126,7 +126,8 @@ class Params:
             pass
 
         if self.optimizer not in ['adam', 'rms', 'ada']:
-            raise ConfigError(f'Unknown optimizer {self.optimizer}')
+            # raise ConfigError(f'Unknown optimizer {self.optimizer}')
+            raise ConfigError('Placeholder error')
 
         self._assign_alphabet(alphabet_decoding_list=Alphabet.DecodingList)
 

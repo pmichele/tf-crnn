@@ -27,7 +27,13 @@ def parse_example(serialized_example, output_shape=None):
     image = tf.image.decode_png(image, channels=1)
     image = augment_data(image)
     image, orig_width = padding_inputs_width(image, output_shape, increment=CONST.DIMENSION_REDUCTION_W_POOLING)
-    features['image'] = image
+
+    # Modify data to experiment with crop and resize
+    upper_half = image[0:16, :, :]
+    lower_half = image[16:32, :, :]
+    padded_image = tf.concat([lower_half, image, upper_half], axis=0)
+
+    features['image'] = padded_image
     features['image_width'] = orig_width
 
     return features, label
