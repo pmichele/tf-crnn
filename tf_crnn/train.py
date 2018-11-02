@@ -8,11 +8,11 @@ try:
 except ImportError:
     pass
 import tensorflow as tf
-from src.model import crnn_fn
-from src.data_handler import make_input_fn
-from src.data_handler import preprocess_image_for_prediction
+from .model import crnn_fn
+from .data_handler import make_input_fn
+from .data_handler import preprocess_image_for_prediction
 
-from src.config import Params, import_params_from_json
+from .config import Params, import_params_from_json
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train the model according to the specified config in the JSON. '

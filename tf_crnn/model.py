@@ -160,7 +160,7 @@ def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> 
     return conv_reshaped
 
 
-def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Params, summaries: bool=True, scope: str=None) -> tf.Tensor:
+def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Params, summaries: bool=True) -> tf.Tensor:
     # Prepare data shape to match `bidirectional_rnn` function requirements
     # Current data input shape: (batch_size, n_steps, n_input) "(batch, time, height)"
 
@@ -185,7 +185,7 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
         lstm_net, _, _ = tf.contrib.rnn.stack_bidirectional_dynamic_rnn(fw_cell_list,
                                                                         bw_cell_list,
                                                                         inputs,
-                                                                        dtype=tf.float32, scope=scope
+                                                                        dtype=tf.float32
                                                                         )
 
         # Dropout layer
@@ -203,10 +203,10 @@ def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Param
 
             if summaries:
                 weights = [var for var in tf.global_variables()
-                           if var.name == 'cond/deep_bidirectional_lstm/fully_connected/weights:0'][0]
+                           if var.name == 'deep_bidirectional_lstm/fully_connected/weights:0'][0]
                 tf.summary.histogram('weights', weights)
                 bias = [var for var in tf.global_variables()
-                        if var.name == 'cond/deep_bidirectional_lstm/fully_connected/bias:0'][0]
+                        if var.name == 'deep_bidirectional_lstm/fully_connected/bias:0'][0]
                 tf.summary.histogram('bias', bias)
 
         lstm_out = tf.reshape(fc_out, [-1, shape[1], params.n_classes], name='reshape_out')  # [batch, width, n_classes]
