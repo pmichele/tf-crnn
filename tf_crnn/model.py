@@ -23,7 +23,7 @@ def conv2d(input, filter, strides=[1, 1, 1, 1], padding='SAME', name=None):
     return tf.nn.conv2d(input, filter, strides=strides, padding=padding, name=name)
 
 
-def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> tf.Tensor:
+def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True, on_document=False) -> tf.Tensor:
     input_tensor = input_imgs
     if input_tensor.shape[-1] == 1:
         input_channels = 1
@@ -136,7 +136,11 @@ def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> 
         with tf.variable_scope('layer7'):
             W = weightVar([2, 2, 512, 512])
             b = biasVar([512])
-            conv = conv2d(pool6, W, padding='VALID')
+            if on_document:
+                conv = conv2d(pool6, W, padding='SAME', strides=[1, 2, 1, 1])
+            else:
+                # We assume the input has height 32, otherwise, well it will give unexpected results
+                conv = conv2d(pool6, W, padding='VALID')
             out = tf.nn.bias_add(conv, b)
             b_norm = tf.layers.batch_normalization(out, axis=-1,
                                                    training=is_training, name='batch-norm')
@@ -150,6 +154,9 @@ def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> 
 
         cnn_net = conv7
 
+        if on_document:
+            return cnn_net
+
         with tf.variable_scope('Reshaping_cnn'):
             shape = cnn_net.get_shape().as_list()  # [batch, height, width, features]
             transposed = tf.transpose(cnn_net, perm=[0, 2, 1, 3],
@@ -157,7 +164,7 @@ def deep_cnn(input_imgs: tf.Tensor, is_training: bool, summaries: bool=True) -> 
             conv_reshaped = tf.reshape(transposed, [shape[0], -1, shape[1] * shape[3]],
                                        name='reshaped')  # [batch, width, height x features]
 
-    return conv_reshaped
+        return conv_reshaped
 
 
 def deep_bidirectional_lstm(inputs: tf.Tensor, corpora: tf.Tensor, params: Params, summaries: bool=True) -> tf.Tensor:

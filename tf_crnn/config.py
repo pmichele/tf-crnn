@@ -17,7 +17,7 @@ class Alphabet:
     LettersLowercase = 'abcdefghijklmnopqrstuvwxyz'  # 26 + 12
     LettersCapitals  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'  # 26 + 1
     Digits = '0123456789'    # 10
-    Symbols = " '.,-/_:"               #old: " '.,:-()/*°"  # 11
+    Symbols = " '.,-/:"          # @Michele: I trained with this " '.,-_/:"     #old: " '.,:-()/*°"  # 11
     DecodingList = ['same', 'lowercase']
 
     BLANK_SYMBOL = '$'
@@ -126,7 +126,7 @@ class Params:
             pass
 
         if self.optimizer not in ['adam', 'rms', 'ada']:
-            raise ConfigError(f'Unknown optimizer {self.optimizer}')
+            raise ConfigError('Unknown optimizer')
 
         self._assign_alphabet(alphabet_decoding_list=Alphabet.DecodingList)
 
